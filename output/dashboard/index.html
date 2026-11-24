@@ -485,7 +485,7 @@ dash.calc('pf_cal', {
         per_share: amt, shares, cash, new_shares: newShares,
         nhi: base >= 20000 ? Math.round(base * 0.0211) : 0,
       };
-    }).sort((a, b) => (a.pay_date < b.pay_date ? -1 : a.pay_date > b.pay_date ? 1 : 0));
+    }).sort((a, b) => (a.pay_date > b.pay_date ? -1 : a.pay_date < b.pay_date ? 1 : 0));
   },
 });
 
