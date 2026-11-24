@@ -1,0 +1,494 @@
+<meta name="dash-one-writer">
+<meta name="dash-form" content="dashboard">
+<style>
+  .ty { display: flex; flex-direction: column; gap: var(--cds-gap-lg); font-family: var(--font-anthropic-sans); color: var(--color-fg); }
+  .ty-head { display: flex; flex-direction: column; gap: var(--cds-gap-xs); }
+  .ty-title { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); margin: 0; text-wrap: balance; }
+  .ty-lede { font-size: var(--cds-font-size-heading); margin: 0; line-height: 1.5; max-width: 62ch; }
+  .ty-lede b { font-weight: var(--cds-font-weight-medium); font-variant-numeric: tabular-nums; }
+  .ty-sub { margin: 0; color: var(--color-fg-muted); font-size: var(--cds-font-size-caption); }
+
+  .ty-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: var(--cds-gap-md); }
+  .ty-kpi { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-xs); min-width: 0; }
+  .ty-kpi-label { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ty-kpi-value { font-family: var(--font-anthropic-serif); font-weight: 400; font-size: var(--cds-font-size-title); font-variant-numeric: tabular-nums; min-height: 1.2em; }
+  .ty-kpi-note { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+
+  .ty-controls { display: flex; flex-wrap: wrap; gap: var(--cds-gap-sm); align-items: center; }
+  .ty-seg { display: inline-flex; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); overflow: hidden; }
+  .ty-seg-btn { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 14px; border: 0; background: var(--color-bg); color: var(--color-fg); cursor: pointer; }
+  .ty-seg-btn + .ty-seg-btn { border-left: 1px solid var(--color-border-line); }
+  .ty-seg-btn[aria-pressed="true"] { background: var(--color-fg); color: var(--color-bg); }
+  .ty-seg-btn:focus-visible, .ty-search:focus-visible, .ty-table tbody tr:focus-visible { outline: 2px solid var(--color-fg); outline-offset: 2px; }
+  .ty-search { font: inherit; font-size: var(--cds-font-size-body); padding: 6px 10px; border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); background: var(--color-bg); color: var(--color-fg); min-width: 0; flex: 1 1 160px; max-width: 260px; }
+
+  .ty-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: var(--cds-gap-md); align-items: start; }
+  .ty-card { background: var(--color-panel); border: 1px solid var(--color-border-line); border-radius: var(--cds-radius); padding: var(--cds-pad-lg); display: flex; flex-direction: column; gap: var(--cds-gap-sm); min-width: 0; }
+  .ty-card h2 { margin: 0; font-size: var(--cds-font-size-heading); font-weight: var(--cds-font-weight-medium); }
+  .ty-card h3 { margin: var(--cds-gap-sm) 0 0; font-size: var(--cds-font-size-body); font-weight: var(--cds-font-weight-medium); color: var(--color-fg-muted); }
+  .ty-hint { margin: 0; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ty-meta { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+  .ty-meta b { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+  .ty-chart { position: relative; min-height: 560px; }
+  .ty-chart-sm { position: relative; min-height: 210px; }
+  .ty-chart svg text, .ty-chart-sm svg text { font-family: var(--font-anthropic-sans); }
+  .ty-axis text, .ty-ylab text { fill: var(--cds-text-secondary); font-size: var(--cds-font-size-caption); }
+  .ty-ylab text { fill: var(--color-fg); }
+  .ty-val { fill: var(--color-fg); font-size: var(--cds-font-size-caption); font-variant-numeric: tabular-nums; }
+  .ty-msg { color: var(--color-fg-muted); font-size: var(--cds-font-size-body); padding: var(--cds-pad-md) 0; }
+
+  .ty-tip { position: absolute; pointer-events: none; z-index: 5; background: var(--cds-surface-popover); border: 1px solid var(--cds-border); box-shadow: var(--cds-shadow-popover); border-radius: var(--cds-radius); padding: 6px 10px; font-size: var(--cds-font-size-caption); color: var(--cds-text-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .ty-tip-h { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); }
+
+  .ty-table-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--cds-gap-sm); flex-wrap: wrap; }
+  .ty-count { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ty-table-wrap { overflow-x: auto; max-height: 640px; overflow-y: auto; }
+  .ty-table { border-collapse: collapse; width: 100%; font-size: var(--cds-font-size-body); font-variant-numeric: tabular-nums; }
+  .ty-table th { position: sticky; top: 0; background: var(--color-panel); text-align: left; font-weight: var(--cds-font-weight-medium); font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); padding: 8px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; z-index: 1; }
+  .ty-table td { padding: 7px 10px; border-bottom: 1px solid var(--color-border-line); white-space: nowrap; }
+  .ty-table .num { text-align: right; }
+  .ty-table tbody tr { cursor: pointer; }
+  .ty-table tbody tr:hover td { background: var(--color-bg); }
+  .ty-table tbody tr.is-sel td { background: var(--color-bg); box-shadow: inset 0 -2px 0 var(--color-fg); }
+  .ty-table td.ty-ind { max-width: 160px; overflow: hidden; text-overflow: ellipsis; color: var(--color-fg-muted); }
+  .ty-chip { display: inline-block; font-size: var(--cds-font-size-caption); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--color-border-line); }
+  .ty-chip.etf { border-color: currentColor; }
+  .ty-chip.warn { color: var(--color-warn); border-color: currentColor; }
+  .ty-pos { color: var(--color-ok); }
+  .ty-neg { color: var(--color-bad); }
+  .ty-empty { color: var(--color-fg-muted); padding: var(--cds-pad-lg) 10px !important; }
+
+  .ty-notes { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ty-notes summary { cursor: pointer; color: var(--color-fg); }
+  .ty-notes ul { margin: var(--cds-gap-sm) 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; max-width: 72ch; }
+</style>
+
+<div class="ty">
+  <header class="ty-head" id="overview">
+    <h1 class="ty-title">台股高殖利率 Top 100</h1>
+    <p class="ty-lede" data-read lang="zh-TW">近五年平均現金殖利率最高的是 <b class="dash-skeleton" data-draw="top-name" data-source="ranking" data-field="name" data-row="0">—</b>，平均每年 <b class="dash-skeleton" data-draw="top-yield" data-source="ranking" data-field="avg_yield" data-row="0">—</b>；綜合前 100 名的平均為 <b class="dash-skeleton" data-draw="kpi-avg" data-source="kpi" data-field="top_avg" data-row="0">—</b>。</p>
+    <p class="ty-sub">資料截止 2026-11-24。近五年指 2021-11-24 至 2026-11-24 的 5 個 12 個月區間；殖利率 = 區間內現金股利 ÷ 區間平均股價。</p>
+  </header>
+
+  <section class="ty-kpis" id="kpis">
+    <div class="ty-kpi" id="kpi-eligible">
+      <div class="ty-kpi-label">合格標的（檔）</div>
+      <div class="ty-kpi-value dash-skeleton" data-draw="kpi-eligible" data-source="kpi" data-field="eligible" data-row="0">—</div>
+      <div class="ty-kpi-note">上市櫃滿 5 年、至少 4 年有配息、日均量 ≥ 100 張</div>
+    </div>
+    <div class="ty-kpi" id="kpi-top-avg">
+      <div class="ty-kpi-label">前 100 名平均殖利率</div>
+      <div class="ty-kpi-value dash-skeleton" data-draw="kpi-avg" data-source="kpi" data-field="top_avg" data-row="0">—</div>
+      <div class="ty-kpi-note">綜合排名前 100 名，5 年平均</div>
+    </div>
+    <div class="ty-kpi" id="kpi-all5">
+      <div class="ty-kpi-label">前 100 名中 5 年皆配息（檔）</div>
+      <div class="ty-kpi-value dash-skeleton" data-draw="kpi-all5" data-source="kpi" data-field="all5" data-row="0">—</div>
+      <div class="ty-kpi-note">其餘為 5 年中有 4 年配息</div>
+    </div>
+    <div class="ty-kpi" id="kpi-etf">
+      <div class="ty-kpi-label">前 100 名中的 ETF（檔）</div>
+      <div class="ty-kpi-value dash-skeleton" data-draw="kpi-etf" data-source="kpi" data-field="etf" data-row="0">—</div>
+      <div class="ty-kpi-note">ETF 配息可能含資本利得分配</div>
+    </div>
+  </section>
+
+  <div class="ty-controls" id="controls">
+    <div class="ty-seg" role="group" aria-label="類型">
+      <button type="button" class="ty-seg-btn" data-cat="all" aria-pressed="true">綜合</button>
+      <button type="button" class="ty-seg-btn" data-cat="個股" aria-pressed="false">個股</button>
+      <button type="button" class="ty-seg-btn" data-cat="ETF" aria-pressed="false">ETF</button>
+    </div>
+    <input id="ty-search" class="ty-search" type="search" placeholder="搜尋代號或名稱" aria-label="搜尋代號或名稱">
+    <select id="ty-sort" class="dash-select" aria-label="排行榜排序">
+      <option value="avg_yield">依 5 年平均殖利率</option>
+      <option value="min_yield">依最低一年殖利率</option>
+      <option value="ttm_yield">依近一年殖利率</option>
+      <option value="ret5y">依 5 年含息報酬</option>
+    </select>
+  </div>
+
+  <div class="ty-grid">
+    <section class="ty-card" id="top20">
+      <h2>前 20 名：近五年平均殖利率</h2>
+      <p class="ty-hint">長條為 5 年平均，細黑線為 5 年中最低的一年。點選長條看個股明細。</p>
+      <div class="ty-chart" data-draw="bars" data-source="ranking"></div>
+    </section>
+
+    <section class="ty-card" id="detail">
+      <h2 data-draw="detail-name">—</h2>
+      <p class="ty-meta" data-draw="detail-meta">—</p>
+      <h3>每年殖利率（截至各年 11/24 的 12 個月）</h3>
+      <div class="ty-chart-sm" data-draw="detail-years" data-source="ranking"></div>
+      <h3>月均價與現金股利</h3>
+      <div class="ty-chart-sm" data-draw="detail-price" data-source="monthly"></div>
+    </section>
+  </div>
+
+  <section class="ty-card" id="ranking">
+    <div class="ty-table-head">
+      <h2>排行榜</h2>
+      <span class="ty-count" data-draw="count">—</span>
+    </div>
+    <div class="ty-table-wrap">
+      <table class="ty-table" data-source="ranking" data-row-key="id">
+        <thead>
+          <tr>
+            <th data-field="rank" class="num">總排名</th>
+            <th data-field="id">代號</th>
+            <th data-field="name">名稱</th>
+            <th data-field="kind">類型</th>
+            <th data-field="industry">產業</th>
+            <th data-field="avg_yield" class="num">5 年平均殖利率</th>
+            <th data-field="min_yield" class="num">最低一年</th>
+            <th>每年殖利率</th>
+            <th data-field="years_paid" class="num">配息年數</th>
+            <th data-field="close" class="num">收盤價</th>
+            <th data-field="ttm_yield" class="num">近一年殖利率</th>
+            <th data-field="ret5y" class="num">5 年含息報酬</th>
+            <th data-field="lots" class="num">日均量（張）</th>
+            <th data-field="note">備註</th>
+          </tr>
+        </thead>
+        <tbody data-draw="table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <details class="ty-notes" id="notes">
+    <summary>計算方式與資料來源</summary>
+    <ul>
+      <li>每年殖利率 = 該 12 個月區間內除息的現金股利合計 ÷ 該區間平均收盤價；5 年平均殖利率為 5 個區間的平均。</li>
+      <li>近一年殖利率 = 最近 12 個月現金股利 ÷ 最新收盤價。5 年含息報酬以還原股價計算。</li>
+      <li>股價與股利都已依配股、分割調整，所以比值不受配股影響；配股本身的價值不計入殖利率。</li>
+      <li>標示「需確認」的標的，某一年殖利率超過 25%，可能是景氣高峰的特別配息，也可能是資料異常。</li>
+      <li>綜合排行在無搜尋時列出前 100 名；輸入搜尋時會在全部合格標的中尋找。</li>
+      <li>資料來源：股票清單取自 FinMind，股價與股利取自 Yahoo Finance。僅供研究參考，不構成投資建議。</li>
+    </ul>
+  </details>
+</div>
+
+<script>
+window.TY = (function () {
+  const st = { cat: 'all', q: '', sort: 'avg_yield', sel: null };
+  const num = (v) => (v === '' || v == null ? NaN : +v);
+  const pct = (v) => (isFinite(v) ? v.toFixed(2) + '%' : '—');
+  const fmtInt = d3.format(',');
+  const fmtPx = d3.format(',.2f');
+  let sortedCache = null, sortedSrc = null;
+  function rows() {
+    const r = dash.data('ranking');
+    if (r.status !== 'ok' || !r.data.length) return null;
+    if (sortedSrc !== r.data) { sortedSrc = r.data; sortedCache = r.data.slice().sort((a, b) => num(a.rank) - num(b.rank)); }
+    return sortedCache;
+  }
+  const catRows = (all) => (st.cat === 'all' ? all : all.filter((d) => d.kind === st.cat));
+  function list() {
+    const all = rows();
+    if (!all) return null;
+    let c = catRows(all);
+    const q = st.q.trim().toLowerCase();
+    if (q) c = c.filter((d) => d.id.toLowerCase().includes(q) || d.name.toLowerCase().includes(q));
+    else c = c.slice(0, 100);
+    if (st.sort !== 'avg_yield') c = c.slice().sort((a, b) => (num(b[st.sort]) || -1e9) - (num(a[st.sort]) || -1e9));
+    return c;
+  }
+  function selected() {
+    const all = rows();
+    if (!all) return null;
+    return all.find((d) => d.id === st.sel) || catRows(all)[0] || null;
+  }
+  function select(id) { st.sel = id; redraw(); }
+  function redraw() { ['bars', 'table-body', 'count', 'detail-name', 'detail-meta', 'detail-years', 'detail-price'].forEach((n) => dash.draw(n)); }
+  function status(id) { return dash.data(id).status; }
+  function tip(el) {
+    const t = document.createElement('div');
+    t.className = 'ty-tip';
+    t.hidden = true;
+    el.appendChild(t);
+    return {
+      show(ev, lines) {
+        t.replaceChildren(...lines.map((s, i) => { const d = document.createElement('div'); if (i === 0) d.className = 'ty-tip-h'; d.textContent = s; return d; }));
+        t.hidden = false;
+        const b = el.getBoundingClientRect();
+        let x = ev.clientX - b.left + 14, y = ev.clientY - b.top + 14;
+        if (x + t.offsetWidth > b.width) x = Math.max(0, ev.clientX - b.left - t.offsetWidth - 14);
+        if (y + t.offsetHeight > b.height) y = Math.max(0, ev.clientY - b.top - t.offsetHeight - 14);
+        t.style.left = x + 'px';
+        t.style.top = y + 'px';
+      },
+      hide() { t.hidden = true; },
+    };
+  }
+  function msg(el, text) { const p = document.createElement('div'); p.className = 'ty-msg'; p.textContent = text; el.replaceChildren(p); }
+  return { st, num, pct, fmtInt, fmtPx, rows, catRows, list, selected, select, redraw, status, tip, msg };
+})();
+
+dash.calc('kpi', {
+  inputs: ['ranking'],
+  title: '摘要數字',
+  description: '從排行資料算出：合格檔數、綜合前 100 名的平均殖利率、其中 5 年皆配息的檔數與 ETF 檔數。',
+  fn: (ranking) => {
+    const top = ranking.slice().sort((a, b) => +a.rank - +b.rank).slice(0, 100);
+    const avg = top.reduce((s, d) => s + +d.avg_yield, 0) / (top.length || 1);
+    return [{
+      eligible: ranking.length,
+      top_avg: Math.round(avg * 100) / 100,
+      all5: top.filter((d) => +d.years_paid === 5).length,
+      etf: top.filter((d) => d.kind === 'ETF').length,
+    }];
+  },
+});
+</script>
+
+<script>
+(function () {
+  const TY = window.TY;
+  document.querySelectorAll('.ty-seg-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      TY.st.cat = btn.dataset.cat;
+      TY.st.sel = null;
+      document.querySelectorAll('.ty-seg-btn').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      TY.redraw();
+    });
+  });
+  document.querySelectorAll('#ty-search').forEach((inp) => inp.addEventListener('input', () => { TY.st.q = inp.value; dash.draw('table-body'); dash.draw('count'); }));
+  document.querySelectorAll('#ty-sort').forEach((s) => s.addEventListener('change', () => { TY.st.sort = s.value; dash.draw('table-body'); }));
+
+  function done(el, st) { if (st !== 'loading') el.classList.remove('dash-skeleton'); }
+
+  dash.draw('top-name', (el) => {
+    const all = TY.rows();
+    done(el, TY.status('ranking'));
+    el.textContent = all ? `${all[0].name}（${all[0].id}）` : '—';
+  });
+  dash.draw('top-yield', (el) => {
+    const all = TY.rows();
+    done(el, TY.status('ranking'));
+    el.textContent = all ? TY.pct(TY.num(all[0].avg_yield)) : '—';
+  });
+  const kpi = (field, f) => (el) => {
+    const k = dash.data('kpi');
+    done(el, k.status);
+    const row = k.status === 'ok' && Array.isArray(k.data) ? k.data[0] : null;
+    el.textContent = row ? f(row[field]) : '—';
+  };
+  dash.draw('kpi-eligible', kpi('eligible', (v) => TY.fmtInt(v)));
+  dash.draw('kpi-avg', kpi('top_avg', (v) => TY.pct(v)));
+  dash.draw('kpi-all5', kpi('all5', (v) => String(v)));
+  dash.draw('kpi-etf', kpi('etf', (v) => String(v)));
+
+  dash.draw('count', (el) => {
+    const L = TY.list();
+    el.textContent = L ? (TY.st.q ? `搜尋到 ${L.length} 檔` : `顯示前 ${L.length} 檔`) : '—';
+  });
+
+  dash.draw('bars', (el) => {
+    const all = TY.rows();
+    if (!all) { TY.msg(el, TY.status('ranking') === 'error' ? '排行資料載入失敗' : '—'); return; }
+    const data = TY.catRows(all).slice(0, 20);
+    const sel = TY.selected();
+    const W = el.clientWidth || 600, rowH = 26, plotH = data.length * rowH, H = plotH + 26;
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', '近五年平均殖利率前 20 名長條圖');
+    const texts = svg.append('g').attr('class', 'ty-ylab').selectAll('text').data(data).join('text')
+      .text((d) => `${d.name} ${d.id}`).attr('y', (d, i) => i * rowH + rowH / 2 + 4).attr('text-anchor', 'end');
+    let lw = 0;
+    texts.each(function () { lw = Math.max(lw, this.getComputedTextLength()); });
+    const left = Math.min(lw + 12, W * 0.45), right = 58;
+    texts.attr('x', left - 8);
+    const max = d3.max(data, (d) => TY.num(d.avg_yield)) || 1;
+    const x = d3.scaleLinear().domain([0, max]).nice().range([left, W - right]);
+    const ticks = x.ticks(W < 480 ? 3 : 5);
+    svg.append('g').selectAll('line').data(ticks).join('line')
+      .attr('x1', x).attr('x2', x).attr('y1', 0).attr('y2', plotH).style('stroke', 'var(--cds-chart-grid)');
+    svg.append('g').attr('class', 'ty-axis').selectAll('text').data(ticks).join('text')
+      .attr('x', x).attr('y', plotH + 18).attr('text-anchor', 'middle').text((d) => d + '%');
+    const g = svg.append('g').selectAll('g').data(data).join('g')
+      .attr('transform', (d, i) => `translate(0,${i * rowH})`).style('cursor', 'pointer');
+    g.append('rect').attr('x', left).attr('y', 0).attr('width', W - left).attr('height', rowH).style('fill', 'transparent');
+    g.append('rect').attr('x', left).attr('y', 5).attr('height', rowH - 10)
+      .attr('width', (d) => Math.max(0, x(TY.num(d.avg_yield)) - left))
+      .style('fill', (d) => (sel && d.id === sel.id ? dash.colors[1] : dash.colors[0]));
+    g.append('line')
+      .attr('x1', (d) => x(TY.num(d.min_yield))).attr('x2', (d) => x(TY.num(d.min_yield)))
+      .attr('y1', 3).attr('y2', rowH - 3).style('stroke', 'var(--color-fg)').style('stroke-width', 2);
+    g.append('text').attr('class', 'ty-val').attr('x', (d) => x(TY.num(d.avg_yield)) + 6).attr('y', rowH / 2 + 4)
+      .text((d) => TY.pct(TY.num(d.avg_yield)));
+    const tp = TY.tip(el);
+    g.on('mousemove', (ev, d) => tp.show(ev, [`${d.name} ${d.id}`, `5 年平均 ${TY.pct(TY.num(d.avg_yield))}`, `最低一年 ${TY.pct(TY.num(d.min_yield))}`, `配息 ${d.years_paid} / 5 年`]))
+      .on('mouseleave', () => tp.hide())
+      .on('click', (ev, d) => TY.select(d.id));
+  });
+
+  dash.draw('detail-name', (el) => {
+    const s = TY.selected();
+    el.textContent = s ? `${s.name} ${s.id}` : '—';
+  });
+
+  dash.draw('detail-meta', (el) => {
+    const s = TY.selected();
+    if (!s) { el.textContent = '—'; return; }
+    const where = 'id=' + encodeURIComponent(s.id);
+    const item = (label, field, text, cls) => {
+      const span = document.createElement('span');
+      span.append(label + ' ');
+      const b = document.createElement('b');
+      b.dataset.source = 'ranking'; b.dataset.field = field; b.dataset.where = where;
+      if (cls) b.className = cls;
+      b.textContent = text;
+      span.append(b);
+      return span;
+    };
+    const ret = TY.num(s.ret5y);
+    el.replaceChildren(
+      item('', 'kind', `${s.kind}・${s.market}`),
+      item('總排名', 'rank', s.rank),
+      item('5 年平均', 'avg_yield', TY.pct(TY.num(s.avg_yield))),
+      item('收盤', 'close', TY.fmtPx(TY.num(s.close))),
+      item('近一年殖利率', 'ttm_yield', TY.pct(TY.num(s.ttm_yield))),
+      item('5 年含息報酬', 'ret5y', isFinite(ret) ? (ret > 0 ? '+' : '') + ret.toFixed(1) + '%' : '—', ret >= 0 ? 'ty-pos' : 'ty-neg'),
+    );
+  });
+
+  dash.draw('detail-years', (el) => {
+    const s = TY.selected();
+    if (!s) { TY.msg(el, TY.status('ranking') === 'error' ? '資料載入失敗' : '—'); return; }
+    const labels = ['2022', '2023', '2024', '2025', '2026'];
+    const vals = ['y1', 'y2', 'y3', 'y4', 'y5'].map((k, i) => ({ label: labels[i], v: TY.num(s[k]) }));
+    const avg = TY.num(s.avg_yield);
+    const W = el.clientWidth || 400, H = 200, m = { t: 22, r: 8, b: 26, l: 8 };
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', `${s.name} 每年殖利率`);
+    const x = d3.scaleBand().domain(labels).range([m.l, W - m.r]).padding(0.35);
+    const ymax = d3.max(vals, (d) => (isFinite(d.v) ? d.v : 0));
+    const y = d3.scaleLinear().domain([0, Math.max(ymax, avg || 0) * 1.12 || 1]).range([H - m.b, m.t]);
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).style('stroke', 'var(--cds-chart-axis)');
+    svg.append('g').selectAll('rect').data(vals).join('rect')
+      .attr('x', (d) => x(d.label)).attr('width', x.bandwidth())
+      .attr('y', (d) => y(isFinite(d.v) ? d.v : 0)).attr('height', (d) => y(0) - y(isFinite(d.v) ? d.v : 0))
+      .style('fill', dash.colors[0]);
+    svg.append('g').selectAll('text').data(vals).join('text').attr('class', 'ty-val')
+      .attr('x', (d) => x(d.label) + x.bandwidth() / 2).attr('y', (d) => y(isFinite(d.v) ? d.v : 0) - 6)
+      .attr('text-anchor', 'middle').text((d) => TY.pct(d.v));
+    svg.append('g').attr('class', 'ty-axis').selectAll('text').data(labels).join('text')
+      .attr('x', (d) => x(d) + x.bandwidth() / 2).attr('y', H - 8).attr('text-anchor', 'middle').text((d) => d);
+    if (isFinite(avg)) {
+      svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(avg)).attr('y2', y(avg))
+        .style('stroke', 'var(--cds-chart-reference)').style('stroke-dasharray', '4 3');
+      svg.append('text').attr('class', 'ty-axis').attr('x', W - m.r).attr('y', y(avg) - 4).attr('text-anchor', 'end')
+        .style('fill', 'var(--cds-text-secondary)').style('font-size', 'var(--cds-font-size-caption)')
+        .text(`平均 ${TY.pct(avg)}`);
+    }
+  });
+
+  let monthlyIdx = null, monthlySrc = null;
+  dash.draw('detail-price', (el) => {
+    const s = TY.selected();
+    const mres = dash.data('monthly');
+    if (!s || mres.status !== 'ok') { TY.msg(el, mres.status === 'error' ? '月資料載入失敗' : '—'); return; }
+    if (monthlySrc !== mres.data) {
+      monthlySrc = mres.data;
+      monthlyIdx = d3.group(mres.data, (d) => d.id);
+    }
+    const parse = d3.utcParse('%Y-%m');
+    const data = (monthlyIdx.get(s.id) || []).map((d) => ({ month: d.month, t: parse(d.month), close: +d.close, div: +d.dividend }))
+      .filter((d) => d.t && isFinite(d.close)).sort((a, b) => a.t - b.t);
+    if (!data.length) { TY.msg(el, '這檔沒有月資料（只收錄各類前 100 名）'); return; }
+    const W = el.clientWidth || 400, H = 230, priceB = 150, stripT = 172, stripB = 206;
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', `${s.name} 近五年月均價與現金股利`);
+    const y = d3.scaleLinear().domain(d3.extent(data, (d) => d.close)).nice().range([priceB, 8]);
+    const yt = y.ticks(4);
+    const ytxt = svg.append('g').attr('class', 'ty-axis').selectAll('text').data(yt).join('text').text((d) => TY.fmtPx(d).replace(/\.00$/, ''));
+    let lw = 0;
+    ytxt.each(function () { lw = Math.max(lw, this.getComputedTextLength()); });
+    const left = lw + 10, right = 10;
+    ytxt.attr('x', left - 6).attr('y', (d) => y(d) + 4).attr('text-anchor', 'end');
+    const x = d3.scaleUtc().domain(d3.extent(data, (d) => d.t)).range([left, W - right]);
+    svg.append('g').selectAll('line').data(yt).join('line').attr('x1', left).attr('x2', W - right)
+      .attr('y1', y).attr('y2', y).style('stroke', 'var(--cds-chart-grid)');
+    svg.append('path').datum(data)
+      .attr('d', d3.line().x((d) => x(d.t)).y((d) => y(d.close)))
+      .style('fill', 'none').style('stroke', dash.colors[0]).style('stroke-width', 2);
+    const maxDiv = d3.max(data, (d) => d.div) || 1;
+    svg.append('text').attr('class', 'ty-axis').attr('x', left).attr('y', stripT - 6)
+      .style('fill', 'var(--cds-text-secondary)').style('font-size', 'var(--cds-font-size-caption)').text('現金股利（除息月）');
+    svg.append('line').attr('x1', left).attr('x2', W - right).attr('y1', stripB).attr('y2', stripB).style('stroke', 'var(--cds-chart-axis)');
+    svg.append('g').selectAll('rect').data(data.filter((d) => d.div > 0)).join('rect')
+      .attr('x', (d) => x(d.t) - 2.5).attr('width', 5)
+      .attr('y', (d) => stripB - Math.max(2, (d.div / maxDiv) * (stripB - stripT)))
+      .attr('height', (d) => Math.max(2, (d.div / maxDiv) * (stripB - stripT)))
+      .style('fill', dash.colors[2] || dash.colors[1]);
+    const years = d3.utcYear.range(d3.utcYear.ceil(x.domain()[0]), x.domain()[1]);
+    svg.append('g').attr('class', 'ty-axis').selectAll('text').data(years).join('text')
+      .attr('x', (d) => x(d)).attr('y', H - 6).attr('text-anchor', 'middle').text((d) => d.getUTCFullYear());
+    const focus = svg.append('circle').attr('r', 4).style('fill', dash.colors[0]).style('display', 'none');
+    const tp = TY.tip(el);
+    const bis = d3.bisector((d) => d.t).center;
+    svg.append('rect').attr('x', left).attr('y', 0).attr('width', W - left - right).attr('height', stripB)
+      .style('fill', 'transparent')
+      .on('mousemove', (ev) => {
+        const [mx] = d3.pointer(ev);
+        const d = data[bis(data, x.invert(mx))];
+        focus.style('display', null).attr('cx', x(d.t)).attr('cy', y(d.close));
+        const lines = [d.month, `月均價 ${TY.fmtPx(d.close)}`];
+        if (d.div > 0) lines.push(`現金股利 ${d.div}`);
+        tp.show(ev, lines);
+      })
+      .on('mouseleave', () => { focus.style('display', 'none'); tp.hide(); });
+  });
+
+  dash.draw('table-body', (tb) => {
+    const L = TY.list();
+    const td = (text, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = text; return c; };
+    if (!L || !L.length) {
+      const tr = document.createElement('tr');
+      const c = td(!L ? (TY.status('ranking') === 'error' ? '排行資料載入失敗' : '載入中…') : '找不到符合的標的', 'ty-empty');
+      c.colSpan = 14;
+      tr.append(c);
+      tb.replaceChildren(tr);
+      return;
+    }
+    const sel = TY.selected();
+    tb.replaceChildren(...L.map((d) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = encodeURIComponent(d.id);
+      tr.tabIndex = 0;
+      if (sel && sel.id === d.id) tr.className = 'is-sel';
+      const kind = document.createElement('td');
+      const chip = document.createElement('span');
+      chip.className = 'ty-chip' + (d.kind === 'ETF' ? ' etf' : '');
+      chip.textContent = d.kind;
+      kind.append(chip);
+      const ind = td(d.industry, 'ty-ind');
+      ind.title = d.industry;
+      const spark = document.createElement('td');
+      const ys = ['y1', 'y2', 'y3', 'y4', 'y5'].map((k) => TY.num(d[k]));
+      const smax = d3.max(ys, (v) => (isFinite(v) ? v : 0)) || 1;
+      const svg = d3.select(spark).append('svg').attr('width', 64).attr('height', 20)
+        .attr('role', 'img').attr('aria-label', '每年殖利率 ' + ys.map((v) => TY.pct(v)).join('、'));
+      svg.selectAll('rect').data(ys).join('rect').attr('x', (v, i) => i * 13).attr('width', 10)
+        .attr('y', (v) => 20 - Math.max(1, ((isFinite(v) ? v : 0) / smax) * 20))
+        .attr('height', (v) => Math.max(1, ((isFinite(v) ? v : 0) / smax) * 20))
+        .style('fill', dash.colors[0]);
+      const ret = TY.num(d.ret5y);
+      const note = document.createElement('td');
+      if (d.note) { const w = document.createElement('span'); w.className = 'ty-chip warn'; w.textContent = '需確認'; w.title = d.note; note.append(w); }
+      tr.append(
+        td(d.rank, 'num'), td(d.id), td(d.name), kind, ind,
+        td(TY.pct(TY.num(d.avg_yield)), 'num'), td(TY.pct(TY.num(d.min_yield)), 'num'), spark,
+        td(d.years_paid, 'num'), td(TY.fmtPx(TY.num(d.close)), 'num'), td(TY.pct(TY.num(d.ttm_yield)), 'num'),
+        td(isFinite(ret) ? (ret > 0 ? '+' : '') + ret.toFixed(1) + '%' : '—', 'num ' + (ret >= 0 ? 'ty-pos' : 'ty-neg')),
+        td(TY.fmtInt(TY.num(d.lots)), 'num'), note,
+      );
+      tr.addEventListener('click', () => TY.select(d.id));
+      tr.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') TY.select(d.id); });
+      return tr;
+    }));
+  });
+})();
+</script>
