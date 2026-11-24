@@ -9,6 +9,7 @@
 - 入帳日 = 除息日 + 該檔過去的平均間隔天數；沒有紀錄就用同類（個股 / ETF）的中位數，
   再沒有則個股 30 天、ETF 24 天。
 - 股票股利（配股）的入帳日以除權日 + 30 天推估。
+- 2027 年：今年每一筆現金配息往後推一年，金額沿用今年同期（保守估計，不假設成長）。
 - 尚未公告的配息沿用 forecast 的規則：去年有、今年還沒發生者，季配月配以今年最近一次金額、
   年配以去年同期金額估算。
 
@@ -121,11 +122,20 @@ def build(stocks: pd.DataFrame, end: pd.Timestamp) -> tuple[pd.DataFrame, pd.Dat
                        "raw": last_amt if (freq >= 2 and last_amt is not None) else e["amount"],
                        "amount": last_amt if (freq >= 2 and last_amt is not None) else e["amount"],
                        "src": "推估", "projected": True})
-        recv_cash = recv_done = recv_stock = 0.0
+        # 4) 明年（2027）推估：今年每一筆現金配息（含上面推估的待除息）往後推一年，金額沿用今年同期。配股不推估。
+        c26_all = sorted([e for e in ev if e["type"] == "cash" and e["ex"].year == YEAR], key=lambda e: e["ex"])
+        for e in c26_all:
+            amt = e["amount"]
+            ex2 = e["ex"] + pd.DateOffset(years=1)
+            ev.append({"type": "cash", "ex": ex2, "pay": ex2 + (e["pay"] - e["ex"]), "pay_est": True,
+                       "raw": amt, "amount": amt, "src": "推估", "projected": True, "next_year": True})
+        recv_cash = recv_done = recv_stock = recv_next = 0.0
         pays = []
         for e in sorted(ev, key=lambda e: e["pay"]):
             proj = e.get("projected", False)
-            if proj:
+            if e.get("next_year"):
+                status = f"預估（{YEAR + 1} 年）"
+            elif proj:
                 status = "預估（尚未公告）"
             elif e["ex"] > end:
                 status = "已公告，待除息"
@@ -141,6 +151,8 @@ def build(stocks: pd.DataFrame, end: pd.Timestamp) -> tuple[pd.DataFrame, pd.Dat
                 "pay_est": int(bool(e["pay_est"])), "status": status, "source": e["src"],
                 "amount_raw": round(e["raw"], 6), "amount": round(e["amount"], 6),
             })
+            if e["pay"].year == YEAR + 1 and e["type"] == "cash":
+                recv_next += e["amount"]
             if e["pay"].year == YEAR:
                 if e["type"] == "cash":
                     recv_cash += e["amount"]
@@ -150,5 +162,5 @@ def build(stocks: pd.DataFrame, end: pd.Timestamp) -> tuple[pd.DataFrame, pd.Dat
                 else:
                     recv_stock += e["amount"]
         summary.append({"id": s.id, "recv_2026": round(recv_cash, 4), "recv_done_2026": round(recv_done, 4),
-                        "stock_2026": round(recv_stock, 6), "pay_lag": round(lag), "pay_src": "FinMind" if any(e["src"] == "FinMind" for e in ev) else "推估"})
+                        "stock_2026": round(recv_stock, 6), "recv_2027": round(recv_next, 4), "pay_lag": round(lag), "pay_src": "FinMind" if any(e["src"] == "FinMind" for e in ev) else "推估"})
     return pd.DataFrame(rows), pd.DataFrame(summary)
