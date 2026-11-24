@@ -2,6 +2,7 @@
 
 - ranking.csv  所有合格標的（英文欄名，殖利率以 % 表示）
 - monthly.csv  綜合 / 個股 / ETF 各前 100 名的近五年月均價與當月現金股利
+- payments.csv 每一筆現金 / 股票股利的除權息日、入帳日（實際或推估）與每股金額（見 src/payments.py）
 - forecast.csv 所有有資料標的的去年 / 今年除權息日、每股股利（原始未調整金額）與今年配息預估
 
 金額基準：ex_2025 / ex_2026 列出公告當時的實際每股金額；div_2025、paid_2026、est_2026 等加總
@@ -14,6 +15,8 @@
 from pathlib import Path
 
 import pandas as pd
+
+import payments
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT = ROOT / "output" / "dashboard"
@@ -126,9 +129,14 @@ def main():
     })
     log = pd.read_csv(ROOT / "data" / "fetch_log.csv", parse_dates=["last_date"])
     stocks = pd.read_csv(ROOT / "data" / "stock_list.csv", dtype={"stock_id": str})
-    fc = build_forecast(stocks, log["last_date"].max())
+    end = log["last_date"].max()
+    fc = build_forecast(stocks, end)
+    pay, summ = payments.build(fc[["id", "name", "kind"]], end)
+    fc = fc.merge(summ, on="id", how="left")
+    fc["recv_yield_2026"] = (fc["recv_2026"] / fc["close"] * 100).round(2)
     fc.to_csv(OUT / "forecast.csv", index=False)
-    keep = ["id", "div_2025", "paid_2026", "yield_2025", "ex_2025", "ex_2026", "pending_2026", "est_2026", "est_yield_2026", "missed_2026"]
+    pay.to_csv(OUT / "payments.csv", index=False)
+    keep = ["id", "recv_2026", "recv_yield_2026", "stock_2026", "div_2025", "paid_2026", "yield_2025", "ex_2025", "ex_2026", "pending_2026", "est_2026", "est_yield_2026", "missed_2026"]
     r = r.merge(fc[keep], on="id", how="left")
     r.to_csv(OUT / "ranking.csv", index=False)
 
@@ -146,7 +154,7 @@ def main():
         mm["month"] = mm.index.strftime("%Y-%m")
         rows.append(mm[["id", "month", "close", "dividend"]])
     pd.concat(rows).dropna(subset=["close"]).to_csv(OUT / "monthly.csv", index=False)
-    print(len(r), "ranking rows;", len(ids), "stocks in monthly;", len(fc), "forecast rows")
+    print(len(pay), "payment rows;", len(r), "ranking rows;", len(ids), "stocks in monthly;", len(fc), "forecast rows")
 
 
 if __name__ == "__main__":

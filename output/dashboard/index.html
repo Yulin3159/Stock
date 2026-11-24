@@ -110,39 +110,78 @@
     </section>
 
     <section class="ty-kpis" id="pf-kpis">
+      <div class="ty-kpi" id="pf-kpi-income">
+        <div class="ty-kpi-label">2026 入帳現金股利（元）</div>
+        <div class="ty-kpi-value" data-draw="pf-income" data-source="pf_total" data-field="income" data-row="0">—</div>
+        <div class="ty-kpi-note" data-draw="pf-income-note">—</div>
+      </div>
+      <div class="ty-kpi" id="pf-kpi-stock">
+        <div class="ty-kpi-label">2026 配股（股）</div>
+        <div class="ty-kpi-value" data-draw="pf-stock" data-source="pf_total" data-field="stock_shares" data-row="0">—</div>
+        <div class="ty-kpi-note" data-draw="pf-stock-note">—</div>
+      </div>
       <div class="ty-kpi" id="pf-kpi-value">
         <div class="ty-kpi-label">持股市值（元）</div>
         <div class="ty-kpi-value" data-draw="pf-value" data-source="pf_total" data-field="value" data-row="0">—</div>
         <div class="ty-kpi-note">以 2026-11-24 收盤價計算</div>
       </div>
-      <div class="ty-kpi" id="pf-kpi-income">
-        <div class="ty-kpi-label">2026 預估現金股利（元）</div>
-        <div class="ty-kpi-value" data-draw="pf-income" data-source="pf_total" data-field="income" data-row="0">—</div>
-        <div class="ty-kpi-note">已除息實際值 + 年底前待除息預估</div>
-      </div>
       <div class="ty-kpi" id="pf-kpi-yield">
-        <div class="ty-kpi-label">整體預估殖利率</div>
+        <div class="ty-kpi-label">2026 入帳殖利率</div>
         <div class="ty-kpi-value" data-draw="pf-yield" data-source="pf_total" data-field="yield" data-row="0">—</div>
-        <div class="ty-kpi-note">預估股利 ÷ 持股市值</div>
+        <div class="ty-kpi-note">今年入帳現金 ÷ 持股市值</div>
       </div>
       <div class="ty-kpi" id="pf-kpi-credit">
         <div class="ty-kpi-label">股利可抵減稅額（元）</div>
         <div class="ty-kpi-value" data-draw="pf-credit" data-source="pf_total" data-field="credit" data-row="0">—</div>
-        <div class="ty-kpi-note">合併計稅：股利 × 8.5%，每戶上限 80,000</div>
+        <div class="ty-kpi-note">（現金 + 配股按面額 10 元）× 8.5%，每戶上限 80,000</div>
       </div>
       <div class="ty-kpi" id="pf-kpi-nhi">
-        <div class="ty-kpi-label">預估二代健保補充保費（元）</div>
+        <div class="ty-kpi-label">二代健保補充保費（元）</div>
         <div class="ty-kpi-value" data-draw="pf-nhi" data-source="pf_total" data-field="nhi" data-row="0">—</div>
-        <div class="ty-kpi-note">單筆股利 ≥ 20,000 元扣 2.11%</div>
+        <div class="ty-kpi-note">2026 入帳中，單筆 ≥ 20,000 元者扣 2.11%</div>
+      </div>
+    </section>
+
+    <section class="ty-card" id="pf-months">
+      <h2>2026 每月股利入帳</h2>
+      <p class="ty-hint">深色是已經入帳，淺色是還沒入帳（已除息待發放、已公告或預估）。所得稅也按入帳日歸屬年度。</p>
+      <div class="ty-chart-sm" data-draw="pf-month-chart" data-source="pf_month"></div>
+    </section>
+
+    <section class="ty-card" id="pf-calendar">
+      <div class="ty-table-head">
+        <h2>入帳行事曆</h2>
+        <span class="ty-count" data-draw="pf-cal-count">—</span>
+      </div>
+      <p class="ty-hint">入帳日標「約」的是推估：用這檔過去除息到發放的平均天數，沒有紀錄時個股抓 30 天、ETF 抓 24 天；配股抓除權後 30 天。實際日期以公司公告為準。</p>
+      <div class="ty-table-wrap">
+        <table class="ty-table" data-source="pf_cal" data-row-key="key">
+          <thead>
+            <tr>
+              <th data-field="pay_date">入帳日</th>
+              <th data-field="stock">代號</th>
+              <th data-field="name">名稱</th>
+              <th data-field="type">類型</th>
+              <th data-field="ex_date">除息（權）日</th>
+              <th data-field="per_share" class="num">每股</th>
+              <th data-field="shares" class="num">持有股數</th>
+              <th data-field="cash" class="num">入帳現金（元）</th>
+              <th data-field="new_shares" class="num">配發股數</th>
+              <th data-field="nhi" class="num">二代健保</th>
+              <th data-field="status">狀態</th>
+            </tr>
+          </thead>
+          <tbody data-draw="pf-cal-body"></tbody>
+        </table>
       </div>
     </section>
 
     <section class="ty-card" id="holdings">
       <div class="ty-table-head">
-        <h2>持股配息明細</h2>
+        <h2>我的持股</h2>
         <span class="ty-count" data-draw="pf-count">—</span>
       </div>
-      <p class="ty-hint">「待除息」是預估：季配、月配以今年最近一次金額估算，年配以去年同期金額估算。每股金額已換算成目前股數基準，除權息日欄列的是公告當時的實際金額。</p>
+      <p class="ty-hint">每股金額已換算成目前股數基準，假設這些股數今年都一直持有。</p>
       <div class="ty-table-wrap">
         <table class="ty-table" data-source="pf_rows" data-row-key="stock">
           <thead>
@@ -154,14 +193,11 @@
               <th data-field="value" class="num">市值</th>
               <th data-field="div_2025" class="num">2025 每股現金股利（元）</th>
               <th data-field="yield_2025" class="num">2025 殖利率</th>
-              <th data-field="ex_2025">2025 除權息日</th>
-              <th data-field="ex_2026">2026 已除息</th>
-              <th data-field="pending_2026">2026 待除息（預估）</th>
-              <th data-field="est_2026" class="num">2026 每股現金股利（元，含預估）</th>
-              <th data-field="est_yield_2026" class="num">2026 預估殖利率</th>
-              <th data-field="income" class="num">2026 預估股利金額</th>
+              <th data-field="recv_2026" class="num">2026 入帳每股現金（元）</th>
+              <th data-field="income" class="num">2026 入帳現金（元）</th>
+              <th data-field="new_shares" class="num">2026 配股（股）</th>
+              <th data-field="recv_yield_2026" class="num">2026 入帳殖利率</th>
               <th data-field="cost_yield" class="num">成本殖利率</th>
-              <th data-field="nhi" class="num">二代健保</th>
               <th></th>
             </tr>
           </thead>
@@ -287,7 +323,8 @@
             <th data-field="div_2025" class="num">2025 每股現金股利（元）</th>
             <th data-field="yield_2025" class="num">2025 殖利率</th>
             <th data-field="ex_2025">2025 除息日與金額</th>
-            <th data-field="est_2026" class="num">2026 每股現金股利（元，含預估）</th>
+            <th data-field="est_2026" class="num">2026 除息每股現金（元，含預估）</th>
+            <th data-field="recv_2026" class="num">2026 入帳每股現金（元）</th>
             <th data-field="ex_2026">2026 除息日與金額</th>
             <th data-field="est_yield_2026" class="num">2026 預估殖利率</th>
             <th data-field="ttm_yield" class="num">近一年殖利率</th>
@@ -312,6 +349,7 @@
       <li>標示「需確認」的標的，某一年殖利率超過 25%，可能是景氣高峰的特別配息，也可能是資料異常。</li>
       <li>綜合排行在無搜尋時列出前 100 名；輸入搜尋時會在全部合格標的中尋找。</li>
       <li>2025 殖利率 = 2025 年除息的現金股利 ÷ 2025 年平均股價；2026 預估殖利率 = 2026 預估全年股利 ÷ 最新收盤價。</li>
+      <li>「除息每股」按除息日歸年度；「入帳每股」按實際發放日歸年度，例如去年 12 月除息、今年 1 月發放的股利算在今年入帳。入帳日優先用 FinMind 的公告發放日，沒有的用推估。</li>
       <li>2026 預估：已除息為實際值；去年有、今年尚未發生的配息視為待除息，季配月配以今年最近一次金額、年配以去年同期金額估算。去年同期已過但今年未除息的不計入。實際配息以公司公告為準。</li>
       <li>資料來源：股票清單取自 FinMind，股價與股利取自 Yahoo Finance。僅供研究參考，不構成投資建議。</li>
     </ul>
@@ -404,8 +442,8 @@ dash.calc('kpi', {
 
 dash.calc('pf_rows', {
   inputs: ['holdings', 'forecast'],
-  title: '我的持股配息預估',
-  description: '把你的持股（股數、成本）對上每檔的 2025 配息與 2026 預估：市值 = 股數 × 收盤價，預估股利金額 = 股數 × 2026 預估每股股利，二代健保 = 單筆達 20,000 元的股利 × 2.11%。',
+  title: '我的持股彙總',
+  description: '持股對上每檔資料：市值 = 股數 × 收盤價；2026 入帳現金 = 股數 × 2026 入帳每股現金；配股 = 股數 × 每股配發股數；成本殖利率 = 入帳每股 ÷ 平均成本。',
   fn: (holdings, forecast) => {
     const byId = new Map(forecast.map((f) => [f.id, f]));
     return holdings.map((h) => {
@@ -414,38 +452,75 @@ dash.calc('pf_rows', {
       const shares = +h.shares || 0;
       const cost = h.cost === '' || h.cost == null ? null : +h.cost;
       if (!f) return { stock: code, name: '查無資料', shares, cost, found: false };
-      const close = +f.close;
-      const est = +f.est_2026 || 0;
-      const pays = String(f.pays_2026 || '').split(';').filter(Boolean).map(Number);
-      const nhi = pays.reduce((s, a) => s + (a * shares >= 20000 ? a * shares * 0.0211 : 0), 0);
+      const close = +f.close, recv = +f.recv_2026 || 0;
       return {
         stock: code, name: f.name, kind: f.kind, shares, cost, found: true,
         close, value: Math.round(shares * close),
         div_2025: +f.div_2025, yield_2025: f.yield_2025 === '' ? null : +f.yield_2025,
-        ex_2025: f.ex_2025 || '', rights_2025: f.rights_2025 || '',
-        ex_2026: f.ex_2026 || '', rights_2026: f.rights_2026 || '',
-        pending_2026: f.pending_2026 || '', missed_2026: f.missed_2026 || '',
-        est_2026: est, est_yield_2026: f.est_yield_2026 === '' ? null : +f.est_yield_2026,
-        income: Math.round(shares * est),
-        cost_yield: cost ? Math.round(est / cost * 10000) / 100 : null,
-        nhi: Math.round(nhi),
+        recv_2026: recv, income: Math.round(shares * recv),
+        new_shares: Math.floor(shares * (+f.stock_2026 || 0)),
+        recv_yield_2026: f.recv_yield_2026 === '' ? null : +f.recv_yield_2026,
+        cost_yield: cost ? Math.round(recv / cost * 10000) / 100 : null,
       };
     }).sort((a, b) => (b.value || 0) - (a.value || 0));
   },
 });
 
+dash.calc('pf_cal', {
+  inputs: ['holdings', 'payments', 'forecast'],
+  title: '持股入帳行事曆',
+  description: '每一筆配息乘上你的股數：現金 = 股數 × 每股現金；配股 = 股數 × 每股配發股數（未滿 1 股不計）；二代健保 = 單筆現金（或配股按面額 10 元）達 20,000 元者 × 2.11%。只列 2026 年起入帳的項目。',
+  fn: (holdings, payments, forecast) => {
+    const sh = new Map(holdings.map((h) => [String(h.stock || h.id), +h.shares || 0]));
+    const names = new Map(forecast.map((f) => [f.id, f.name]));
+    return payments.filter((p) => sh.has(p.id) && p.pay_date >= '2026-01-01').map((p) => {
+      const shares = sh.get(p.id), amt = +p.amount;
+      const isCash = p.type === '現金';
+      const cash = isCash ? Math.round(shares * amt) : 0;
+      const newShares = isCash ? 0 : Math.floor(shares * amt);
+      const base = isCash ? cash : newShares * 10;
+      return {
+        key: `${p.id}|${p.type}|${p.ex_date}`, stock: p.id, name: names.get(p.id) || '', type: p.type,
+        ex_date: p.ex_date, pay_date: p.pay_date, pay_est: p.pay_est === '1', status: p.status,
+        per_share: amt, shares, cash, new_shares: newShares,
+        nhi: base >= 20000 ? Math.round(base * 0.0211) : 0,
+      };
+    }).sort((a, b) => (a.pay_date < b.pay_date ? -1 : a.pay_date > b.pay_date ? 1 : 0));
+  },
+});
+
+dash.calc('pf_month', {
+  inputs: ['pf_cal'],
+  title: '2026 每月入帳',
+  description: '把 2026 年入帳的現金股利按入帳月份加總，分成已入帳與尚未入帳。',
+  fn: (pf_cal) => {
+    const rows = Array.from({ length: 12 }, (_, i) => ({ month: `2026-${String(i + 1).padStart(2, '0')}`, done: 0, pending: 0 }));
+    pf_cal.forEach((r) => {
+      if (!r.pay_date.startsWith('2026')) return;
+      const m = +r.pay_date.slice(5, 7) - 1;
+      if (r.status === '已入帳') rows[m].done += r.cash; else rows[m].pending += r.cash;
+    });
+    return rows;
+  },
+});
+
 dash.calc('pf_total', {
-  inputs: ['pf_rows'],
+  inputs: ['pf_rows', 'pf_cal'],
   title: '持股合計',
-  description: '持股市值、2026 預估股利金額與整體殖利率；可抵減稅額 = 預估股利 × 8.5%，每戶上限 80,000 元；二代健保為各檔合計。',
-  fn: (pf_rows) => {
+  description: '2026 入帳現金 = 行事曆中 2026 年入帳的現金合計；可抵減稅額 =（現金 + 配股股數 × 面額 10 元）× 8.5%，每戶上限 80,000 元；二代健保為 2026 入帳各筆合計。',
+  fn: (pf_rows, pf_cal) => {
+    const y = pf_cal.filter((r) => r.pay_date.startsWith('2026'));
     const value = pf_rows.reduce((s, r) => s + (r.value || 0), 0);
-    const income = pf_rows.reduce((s, r) => s + (r.income || 0), 0);
+    const income = y.reduce((s, r) => s + r.cash, 0);
+    const done = y.filter((r) => r.status === '已入帳').reduce((s, r) => s + r.cash, 0);
+    const stock_shares = y.reduce((s, r) => s + r.new_shares, 0);
+    const closeOf = new Map(pf_rows.map((r) => [r.stock, r.close || 0]));
+    const stock_value = Math.round(y.reduce((s, r) => s + r.new_shares * (closeOf.get(r.stock) || 0), 0));
     return [{
-      value, income,
+      value, income, done, pending: income - done, stock_shares, stock_value,
       yield: value ? Math.round(income / value * 10000) / 100 : 0,
-      credit: Math.min(Math.round(income * 0.085), 80000),
-      nhi: pf_rows.reduce((s, r) => s + (r.nhi || 0), 0),
+      credit: Math.min(Math.round((income + stock_shares * 10) * 0.085), 80000),
+      nhi: y.reduce((s, r) => s + r.nhi, 0),
     }];
   },
 });
@@ -558,19 +633,95 @@ dash.calc('pf_total', {
   };
   dash.draw('pf-value', pfTotal('value', (v) => TY.fmtInt(v)));
   dash.draw('pf-income', pfTotal('income', (v) => TY.fmtInt(v)));
+  dash.draw('pf-stock', pfTotal('stock_shares', (v) => TY.fmtInt(v)));
   dash.draw('pf-yield', pfTotal('yield', (v) => TY.pct(v)));
   dash.draw('pf-credit', pfTotal('credit', (v) => TY.fmtInt(v)));
   dash.draw('pf-nhi', pfTotal('nhi', (v) => TY.fmtInt(v)));
+  const markSpan = (src, field, text) => { const b = document.createElement('b'); b.dataset.source = src; b.dataset.field = field; b.dataset.row = '0'; b.textContent = text; return b; };
+  dash.draw('pf-income-note', (el) => {
+    const k = dash.data('pf_total');
+    const row = k.status === 'ok' && Array.isArray(k.data) ? k.data[0] : null;
+    if (!row) { el.textContent = '—'; return; }
+    el.replaceChildren('已入帳 ', markSpan('pf_total', 'done', TY.fmtInt(row.done)), '，還沒入帳 ', markSpan('pf_total', 'pending', TY.fmtInt(row.pending)));
+  });
+  dash.draw('pf-stock-note', (el) => {
+    const k = dash.data('pf_total');
+    const row = k.status === 'ok' && Array.isArray(k.data) ? k.data[0] : null;
+    if (!row) { el.textContent = '—'; return; }
+    el.replaceChildren(row.stock_shares ? '以現價計約 ' : '今年持股沒有配股', ...(row.stock_shares ? [markSpan('pf_total', 'stock_value', TY.fmtInt(row.stock_value)), ' 元'] : []));
+  });
 
   dash.draw('pf-count', (el) => {
     const r = dash.data('pf_rows');
     el.textContent = r.status === 'ok' && Array.isArray(r.data) ? `${r.data.length} 檔` : '—';
   });
 
+  dash.draw('pf-month-chart', (el) => {
+    const r = dash.data('pf_month');
+    if (r.status !== 'ok' || !Array.isArray(r.data)) { TY.msg(el, r.status === 'error' ? '資料載入失敗' : '—'); return; }
+    const data = r.data;
+    const W = el.clientWidth || 500, H = 210, m = { t: 22, r: 6, b: 24, l: 6 };
+    el.replaceChildren();
+    const svg = d3.select(el).append('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`)
+      .attr('role', 'img').attr('aria-label', '2026 每月股利入帳金額');
+    const x = d3.scaleBand().domain(data.map((d) => d.month)).range([m.l, W - m.r]).padding(0.25);
+    const max = d3.max(data, (d) => d.done + d.pending) || 1;
+    const y = d3.scaleLinear().domain([0, max * 1.15]).range([H - m.b, m.t]);
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).style('stroke', 'var(--cds-chart-axis)');
+    const g = svg.append('g').selectAll('g').data(data).join('g');
+    g.append('rect').attr('x', (d) => x(d.month)).attr('width', x.bandwidth())
+      .attr('y', (d) => y(d.done)).attr('height', (d) => y(0) - y(d.done)).style('fill', dash.colors[0]);
+    g.append('rect').attr('x', (d) => x(d.month)).attr('width', x.bandwidth())
+      .attr('y', (d) => y(d.done + d.pending)).attr('height', (d) => y(d.done) - y(d.done + d.pending))
+      .style('fill', dash.colors[0]).style('opacity', 0.35);
+    const small = W < 520;
+    g.append('text').attr('class', 'ty-val').attr('x', (d) => x(d.month) + x.bandwidth() / 2).attr('y', (d) => y(d.done + d.pending) - 5)
+      .attr('text-anchor', 'middle').style('font-size', small ? '9px' : null)
+      .text((d) => (d.done + d.pending ? (small && d.done + d.pending >= 10000 ? (Math.round((d.done + d.pending) / 1000) + 'k') : TY.fmtInt(d.done + d.pending)) : ''));
+    svg.append('g').attr('class', 'ty-axis').selectAll('text').data(data).join('text')
+      .attr('x', (d) => x(d.month) + x.bandwidth() / 2).attr('y', H - 6).attr('text-anchor', 'middle').text((d) => +d.month.slice(5) + '月');
+    const tp = TY.tip(el);
+    g.on('mousemove', (ev, d) => tp.show(ev, [`2026 年 ${+d.month.slice(5)} 月`, `已入帳 ${TY.fmtInt(d.done)} 元`, `還沒入帳 ${TY.fmtInt(d.pending)} 元`])).on('mouseleave', () => tp.hide());
+  });
+
+  dash.draw('pf-cal-count', (el) => {
+    const r = dash.data('pf_cal');
+    el.textContent = r.status === 'ok' && Array.isArray(r.data) ? `${r.data.length} 筆` : '—';
+  });
+
+  dash.draw('pf-cal-body', (tb) => {
+    const r = dash.data('pf_cal');
+    const td = (text, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = text; return c; };
+    const empty = (text) => { const tr = document.createElement('tr'); const c = td(text, 'ty-empty'); c.colSpan = 11; tr.append(c); tb.replaceChildren(tr); };
+    if (r.status === 'error') return empty('資料載入失敗');
+    if (r.status !== 'ok' || !Array.isArray(r.data)) return empty('載入中…');
+    if (!r.data.length) return empty('新增持股後，這裡會列出每一筆股利的入帳日與金額。');
+    tb.replaceChildren(...r.data.map((d) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = d.key.split('|').map(encodeURIComponent).join(',');
+      const status = document.createElement('td');
+      const chip = document.createElement('span');
+      chip.className = 'ty-chip' + (d.status === '已入帳' ? '' : ' warn');
+      chip.textContent = d.status;
+      status.append(chip);
+      tr.append(
+        td((d.pay_est ? '約 ' : '') + d.pay_date), td(d.stock), td(d.name), td(d.type), td(d.ex_date),
+        td(d.type === '現金' ? TY.div(d.per_share) + ' 元' : '每千股 ' + (d.per_share * 1000).toFixed(1) + ' 股', 'num'),
+        td(TY.fmtInt(d.shares), 'num'),
+        td(d.type === '現金' ? TY.fmtInt(d.cash) : '—', 'num'),
+        td(d.type === '股票' ? TY.fmtInt(d.new_shares) : '—', 'num'),
+        td(d.nhi ? TY.fmtInt(d.nhi) : '0', 'num' + (d.nhi ? ' ty-neg' : '')),
+        status,
+      );
+      if (!d.pay_date.startsWith('2026')) tr.style.opacity = '0.6';
+      return tr;
+    }));
+  });
+
   dash.draw('pf-body', (tb) => {
     const r = dash.data('pf_rows');
     const td = (text, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = text; return c; };
-    const empty = (text) => { const tr = document.createElement('tr'); const c = td(text, 'ty-empty'); c.colSpan = 16; tr.append(c); tb.replaceChildren(tr); };
+    const empty = (text) => { const tr = document.createElement('tr'); const c = td(text, 'ty-empty'); c.colSpan = 13; tr.append(c); tb.replaceChildren(tr); };
     if (r.status === 'error') return empty('持股資料載入失敗');
     if (r.status !== 'ok' || !Array.isArray(r.data)) return empty(r.status === 'connect' || r.status === 'declined' ? '需要登入才能讀取你的持股' : '載入中…');
     if (!r.data.length) return empty('還沒有持股。在上方輸入代號和股數，按「儲存」就會出現在這裡。也可以在「高殖利率排行」點選個股後按「加入我的持股」。');
@@ -594,20 +745,14 @@ dash.calc('pf_total', {
       del.append(b);
       if (!d.found) {
         tr.append(td(d.stock), td(d.name), td(TY.fmtInt(d.shares), 'num'));
-        const c = td('這個代號沒有在上市櫃資料中，可能已下市或是興櫃股票。', 'ty-est'); c.colSpan = 12; tr.append(c, del);
+        const c = td('這個代號沒有在上市櫃資料中，可能已下市或是興櫃股票。', 'ty-est'); c.colSpan = 9; tr.append(c, del);
         return tr;
       }
-      const ex25 = td([d.ex_2025, d.rights_2025].filter(Boolean).join('；') || '—', 'ty-wrap');
-      const ex26done = td([d.ex_2026, d.rights_2026].filter(Boolean).join('；') || '—', 'ty-wrap');
-      const pend = TY.exCell('', d.pending_2026 ? d.pending_2026 : '', d.missed_2026);
-      if (!d.pending_2026 && !d.missed_2026) pend.textContent = '今年已無待除息';
-      const nhi = td(d.nhi ? TY.fmtInt(d.nhi) : '0', 'num' + (d.nhi ? ' ty-neg' : ''));
       tr.append(
         td(d.stock), td(d.name), td(TY.fmtInt(d.shares), 'num'), td(TY.fmtPx(d.close), 'num'), td(money(d.value), 'num'),
-        td(TY.div(d.div_2025), 'num'), td(TY.pct(d.yield_2025), 'num'), ex25,
-        ex26done, pend,
-        td(TY.div(d.est_2026), 'num'), td(TY.pct(d.est_yield_2026), 'num'), td(money(d.income), 'num'),
-        td(d.cost_yield == null ? '—' : TY.pct(d.cost_yield), 'num'), nhi, del,
+        td(TY.div(d.div_2025), 'num'), td(TY.pct(d.yield_2025), 'num'),
+        td(TY.div(d.recv_2026), 'num'), td(money(d.income), 'num'), td(d.new_shares ? TY.fmtInt(d.new_shares) : '0', 'num'),
+        td(TY.pct(d.recv_yield_2026), 'num'), td(d.cost_yield == null ? '—' : TY.pct(d.cost_yield), 'num'), del,
       );
       return tr;
     }));
@@ -806,7 +951,7 @@ dash.calc('pf_total', {
     if (!L || !L.length) {
       const tr = document.createElement('tr');
       const c = td(!L ? (TY.status('ranking') === 'error' ? '排行資料載入失敗' : '載入中…') : '找不到符合的標的', 'ty-empty');
-      c.colSpan = 20;
+      c.colSpan = 21;
       tr.append(c);
       tb.replaceChildren(tr);
       return;
@@ -844,6 +989,7 @@ dash.calc('pf_total', {
         td(TY.pct(TY.num(d.yield_2025)), 'num'),
         td(d.ex_2025 || '—', 'ty-wrap'),
         td(TY.div(d.est_2026), 'num'),
+        td(TY.div(d.recv_2026), 'num'),
         TY.exCell(d.ex_2026, d.pending_2026, d.missed_2026),
         td(TY.pct(TY.num(d.est_yield_2026)), 'num'),
         td(TY.pct(TY.num(d.ttm_yield)), 'num'),
