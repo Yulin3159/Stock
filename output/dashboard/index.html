@@ -108,11 +108,12 @@
         <label class="ty-field">代號或名稱<input id="ty-hold-code" class="wide" list="ty-stock-list" required placeholder="例如 0056 或 元大高股息"></label>
         <datalist id="ty-stock-list" data-draw="stock-options" data-source="forecast"></datalist>
         <label class="ty-field">股數<input id="ty-hold-shares" type="number" min="1" step="1" required placeholder="1000 股 = 1 張"></label>
+        <label class="ty-field">買進日期（選填）<input id="ty-hold-date" type="date" min="2000-01-01" max="2030-12-31"></label>
         <label class="ty-field">平均成本（選填）<input id="ty-hold-cost" type="number" min="0" step="0.01" placeholder="每股元"></label>
         <button type="submit" class="ty-btn" id="ty-hold-save">儲存</button>
         <span class="ty-formmsg" id="ty-hold-msg" role="status" data-draw="form-msg"></span>
       </form>
-      <p class="ty-hint">同一個代號再儲存一次會覆蓋股數與成本。持股只存在你的帳號，其他看得到這個頁面的人看不到。</p>
+      <p class="ty-hint">沒填買進日期：會覆蓋這檔的股數，視為今年一直持有。有填買進日期：會「加一筆」到這檔，配息只算除息日前已買進的股數，適合分批買進或定期定額。持股只存在你的帳號，其他看得到這個頁面的人看不到。</p>
     </section>
 
     <section class="ty-kpis" id="pf-kpis">
@@ -187,7 +188,7 @@
         <h2>我的持股</h2>
         <span class="ty-count" data-draw="pf-count">—</span>
       </div>
-      <p class="ty-hint">每股金額已換算成目前股數基準，假設這些股數今年都一直持有。</p>
+      <p class="ty-hint">每股金額已換算成目前股數基準。有填買進日期的標的，只算除息日前已買進的股數；沒填的視為今年一直持有。</p>
       <div class="ty-table-wrap">
         <table class="ty-table" data-source="pf_rows" data-row-key="stock">
           <thead>
@@ -426,6 +427,12 @@ window.TY = (function () {
     c.append(...parts);
     return c;
   }
+  const lotsOf = (h) => {
+    let l = h && h.lots;
+    if (typeof l === 'string') { try { l = JSON.parse(l); } catch (e) { l = null; } }
+    return Array.isArray(l) && l.length ? l.map((x) => ({ date: String(x.date || ''), shares: +x.shares || 0 })) : null;
+  };
+  window.TYlots = lotsOf;
   const div = (v) => { const n = num(v); return isFinite(n) ? n.toFixed(n >= 10 ? 2 : 3).replace(/0$/, '') : '—'; };
   return { div, st, num, pct, fmtInt, fmtPx, rows, catRows, list, selected, select, redraw, status, tip, msg, exCell };
 })();
@@ -447,24 +454,27 @@ dash.calc('kpi', {
 });
 
 dash.calc('pf_rows', {
-  inputs: ['holdings', 'forecast'],
+  inputs: ['holdings', 'forecast', 'pf_cal'],
   title: '我的持股彙總',
-  description: '持股對上每檔資料：市值 = 股數 × 收盤價；2026 入帳現金 = 股數 × 2026 入帳每股現金；配股 = 股數 × 每股配發股數；成本殖利率 = 入帳每股 ÷ 平均成本。',
-  fn: (holdings, forecast) => {
+  description: '持股對上每檔資料：市值 = 股數 × 收盤價；2026 入帳現金與配股取自入帳行事曆（有買進日期的，只算除息前已買進的股數）；成本殖利率 = 2026 入帳每股 ÷ 平均成本。',
+  fn: (holdings, forecast, pf_cal) => {
     const byId = new Map(forecast.map((f) => [f.id, f]));
     return holdings.map((h) => {
       const code = String(h.stock || h.id || '');
       const f = byId.get(code);
-      const shares = +h.shares || 0;
+      const lots = window.TYlots(h);
+      const shares = lots ? lots.reduce((s, x) => s + x.shares, 0) : (+h.shares || 0);
       const cost = h.cost === '' || h.cost == null ? null : +h.cost;
-      if (!f) return { stock: code, name: '查無資料', shares, cost, found: false };
+      const lots_text = lots ? lots.map((x) => `${x.date ? x.date.slice(5).replace('-', '/') : '更早'} ${x.shares} 股`).join('、') : '';
+      if (!f) return { stock: code, name: '查無資料', shares, cost, found: false, lots_text };
       const close = +f.close, recv = +f.recv_2026 || 0;
+      const mine = pf_cal.filter((r) => r.stock === code && r.pay_date.startsWith('2026'));
       return {
-        stock: code, name: f.name, kind: f.kind, shares, cost, found: true,
+        stock: code, name: f.name, kind: f.kind, shares, cost, found: true, lots_text,
         close, value: Math.round(shares * close),
         div_2025: +f.div_2025, yield_2025: f.yield_2025 === '' ? null : +f.yield_2025,
-        recv_2026: recv, income: Math.round(shares * recv),
-        new_shares: Math.floor(shares * (+f.stock_2026 || 0)),
+        recv_2026: recv, income: mine.reduce((s, r) => s + r.cash, 0),
+        new_shares: mine.reduce((s, r) => s + r.new_shares, 0),
         recv_yield_2026: f.recv_yield_2026 === '' ? null : +f.recv_yield_2026,
         cost_yield: cost ? Math.round(recv / cost * 10000) / 100 : null,
       };
@@ -475,12 +485,16 @@ dash.calc('pf_rows', {
 dash.calc('pf_cal', {
   inputs: ['holdings', 'payments', 'forecast'],
   title: '持股入帳行事曆',
-  description: '每一筆配息乘上你的股數：現金 = 股數 × 每股現金；配股 = 股數 × 每股配發股數（未滿 1 股不計）；二代健保 = 單筆現金（或配股按面額 10 元）達 20,000 元者 × 2.11%。只列 2026 年起入帳的項目。',
+  description: '每一筆配息乘上除息日前一天你持有的股數（有填買進日期的，除息日當天或之後才買的不算）：現金 = 股數 × 每股現金；配股 = 股數 × 每股配發股數（未滿 1 股不計）；二代健保 = 單筆現金（或配股按面額 10 元）達 20,000 元者 × 2.11%。只列 2026 年起入帳的項目。',
   fn: (holdings, payments, forecast) => {
-    const sh = new Map(holdings.map((h) => [String(h.stock || h.id), +h.shares || 0]));
+    const sh = new Map(holdings.map((h) => [String(h.stock || h.id), h]));
+    const heldAt = (h, ex) => {
+      const lots = window.TYlots(h);
+      return lots ? lots.filter((x) => !x.date || x.date < ex).reduce((s, x) => s + x.shares, 0) : (+h.shares || 0);
+    };
     const names = new Map(forecast.map((f) => [f.id, f.name]));
     return payments.filter((p) => sh.has(p.id) && p.pay_date >= '2026-01-01').map((p) => {
-      const shares = sh.get(p.id), amt = +p.amount;
+      const shares = heldAt(sh.get(p.id), p.ex_date), amt = +p.amount;
       const isCash = p.type === '現金';
       const cash = isCash ? Math.round(shares * amt) : 0;
       const newShares = isCash ? 0 : Math.floor(shares * amt);
@@ -491,7 +505,7 @@ dash.calc('pf_cal', {
         per_share: amt, shares, cash, new_shares: newShares,
         nhi: base >= 20000 ? Math.round(base * 0.0211) : 0,
       };
-    }).sort((a, b) => (a.pay_date > b.pay_date ? -1 : a.pay_date < b.pay_date ? 1 : 0));
+    }).filter((r) => r.shares > 0).sort((a, b) => (a.pay_date > b.pay_date ? -1 : a.pay_date < b.pay_date ? 1 : 0));
   },
 });
 
@@ -587,12 +601,24 @@ dash.calc('pf_total', {
     const code = resolveCode(codeEl ? codeEl.value : '');
     const shares = Math.round(Number(sharesEl ? sharesEl.value : 0));
     const cost = costEl && costEl.value !== '' ? Number(costEl.value) : null;
+    const dateEl = form.querySelector('#ty-hold-date');
+    const date = dateEl && dateEl.value && dateEl.validity.valid ? dateEl.value : '';
     if (!/^[0-9A-Za-z]{4,7}$/.test(code)) { setMsg('找不到這個代號，請輸入 4 到 6 碼的股票代號。', false); dash.draw('form-msg'); return; }
     if (!(shares > 0)) { setMsg('請輸入大於 0 的股數。', false); dash.draw('form-msg'); return; }
     try {
       const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
-      await db.doc(`${HOLD_PATH(await user.id())}/${code}`).set({ stock: code, shares, cost });
-      setMsg(`已儲存 ${code}，${shares.toLocaleString()} 股。`, true);
+      let doc = { stock: code, shares, cost };
+      if (date) {
+        const hd = dash.data('holdings');
+        const old = hd.status === 'ok' ? hd.data.find((h) => String(h.stock || h.id) === code) : null;
+        const lots = old ? (window.TYlots(old) || [{ date: '', shares: +old.shares || 0 }]) : [];
+        lots.push({ date, shares });
+        lots.sort((a, b) => (a.date < b.date ? -1 : 1));
+        doc = { stock: code, shares: lots.reduce((s, x) => s + x.shares, 0), cost: cost ?? (old ? old.cost ?? null : null), lots };
+      }
+      await db.doc(`${HOLD_PATH(await user.id())}/${code}`).set(doc);
+      setMsg(date ? `已加入 ${code} ${date} 買進 ${shares.toLocaleString()} 股，合計 ${doc.shares.toLocaleString()} 股。` : `已儲存 ${code}，${shares.toLocaleString()} 股。`, true);
+      if (dateEl) dateEl.value = '';
       if (codeEl) codeEl.value = '';
       if (sharesEl) sharesEl.value = '';
       if (costEl) costEl.value = '';
@@ -747,6 +773,11 @@ dash.calc('pf_total', {
     if (r.status !== 'ok' || !Array.isArray(r.data)) return empty(r.status === 'connect' || r.status === 'declined' ? '需要登入才能讀取你的持股' : '載入中…');
     if (!r.data.length) return empty('還沒有持股。在上方輸入代號和股數，按「儲存」就會出現在這裡。也可以在「高殖利率排行」點選個股後按「加入我的持股」。');
     const money = (v) => (v == null || !isFinite(v) ? '—' : TY.fmtInt(v));
+    const nameCell = (d) => {
+      const c = td(d.name);
+      if (d.lots_text) { const sm = document.createElement('div'); sm.className = 'ty-est ty-money'; sm.style.fontSize = 'var(--cds-font-size-caption)'; sm.textContent = '分批：' + d.lots_text; c.append(sm); }
+      return c;
+    };
     tb.replaceChildren(...r.data.map((d) => {
       const tr = document.createElement('tr');
       tr.dataset.key = encodeURIComponent(d.stock);
@@ -770,7 +801,7 @@ dash.calc('pf_total', {
         return tr;
       }
       tr.append(
-        td(d.stock), td(d.name), td(TY.fmtInt(d.shares), 'num ty-money'), td(TY.fmtPx(d.close), 'num'), td(money(d.value), 'num ty-money'),
+        td(d.stock), nameCell(d), td(TY.fmtInt(d.shares), 'num ty-money'), td(TY.fmtPx(d.close), 'num'), td(money(d.value), 'num ty-money'),
         td(TY.div(d.div_2025), 'num'), td(TY.pct(d.yield_2025), 'num'),
         td(TY.div(d.recv_2026), 'num'), td(money(d.income), 'num ty-money'), td(d.new_shares ? TY.fmtInt(d.new_shares) : '0', 'num ty-money'),
         td(TY.pct(d.recv_yield_2026), 'num'), td(d.cost_yield == null ? '—' : TY.pct(d.cost_yield), 'num ty-money'), del,

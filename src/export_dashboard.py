@@ -91,7 +91,7 @@ def build_forecast(stocks, end):
         close = px["close"].iloc[-1]
         events = lambda e: "、".join(f"{fmt(t)} ${a:g}" for t, a in zip(e["date"], e["raw"].round(4)))
         rows.append({
-            "id": s.stock_id, "name": s.stock_name, "market": "上市" if s.type == "twse" else "上櫃",
+            "id": s.stock_id, "name": s.stock_name, "market": {"twse": "上市", "tpex": "上櫃"}.get(s.type, "興櫃"),
             "kind": "ETF" if s.stock_id.startswith("00") else "個股",
             "close": round(close, 2),
             "div_2025": round(e25["cash_dividend"].sum(), 4), "yield_2025": round(y25, 2),
