@@ -128,7 +128,7 @@ def main():
     stocks = pd.read_csv(ROOT / "data" / "stock_list.csv", dtype={"stock_id": str})
     fc = build_forecast(stocks, log["last_date"].max())
     fc.to_csv(OUT / "forecast.csv", index=False)
-    keep = ["id", "yield_2025", "ex_2025", "ex_2026", "pending_2026", "est_2026", "est_yield_2026", "missed_2026"]
+    keep = ["id", "div_2025", "paid_2026", "yield_2025", "ex_2025", "ex_2026", "pending_2026", "est_2026", "est_yield_2026", "missed_2026"]
     r = r.merge(fc[keep], on="id", how="left")
     r.to_csv(OUT / "ranking.csv", index=False)
 

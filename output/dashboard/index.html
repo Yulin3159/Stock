@@ -152,12 +152,12 @@
               <th data-field="shares" class="num">股數</th>
               <th data-field="close" class="num">收盤價</th>
               <th data-field="value" class="num">市值</th>
-              <th data-field="div_2025" class="num">2025 每股股利</th>
+              <th data-field="div_2025" class="num">2025 每股現金股利（元）</th>
               <th data-field="yield_2025" class="num">2025 殖利率</th>
               <th data-field="ex_2025">2025 除權息日</th>
               <th data-field="ex_2026">2026 已除息</th>
               <th data-field="pending_2026">2026 待除息（預估）</th>
-              <th data-field="est_2026" class="num">2026 預估每股</th>
+              <th data-field="est_2026" class="num">2026 每股現金股利（元，含預估）</th>
               <th data-field="est_yield_2026" class="num">2026 預估殖利率</th>
               <th data-field="income" class="num">2026 預估股利金額</th>
               <th data-field="cost_yield" class="num">成本殖利率</th>
@@ -284,12 +284,14 @@
             <th>每年殖利率</th>
             <th data-field="years_paid" class="num">配息年數</th>
             <th data-field="close" class="num">收盤價</th>
+            <th data-field="div_2025" class="num">2025 每股現金股利（元）</th>
+            <th data-field="yield_2025" class="num">2025 殖利率</th>
+            <th data-field="ex_2025">2025 除息日與金額</th>
+            <th data-field="est_2026" class="num">2026 每股現金股利（元，含預估）</th>
+            <th data-field="ex_2026">2026 除息日與金額</th>
+            <th data-field="est_yield_2026" class="num">2026 預估殖利率</th>
             <th data-field="ttm_yield" class="num">近一年殖利率</th>
             <th data-field="ret5y" class="num">5 年含息報酬</th>
-            <th data-field="yield_2025" class="num">2025 殖利率</th>
-            <th data-field="ex_2025">2025 除息日</th>
-            <th data-field="ex_2026">2026 除息日</th>
-            <th data-field="est_yield_2026" class="num">2026 預估殖利率</th>
             <th data-field="lots" class="num">日均量（張）</th>
             <th data-field="note">備註</th>
           </tr>
@@ -380,7 +382,8 @@ window.TY = (function () {
     c.append(...parts);
     return c;
   }
-  return { st, num, pct, fmtInt, fmtPx, rows, catRows, list, selected, select, redraw, status, tip, msg, exCell };
+  const div = (v) => { const n = num(v); return isFinite(n) ? n.toFixed(n >= 10 ? 2 : 3).replace(/0$/, '') : '—'; };
+  return { div, st, num, pct, fmtInt, fmtPx, rows, catRows, list, selected, select, redraw, status, tip, msg, exCell };
 })();
 
 dash.calc('kpi', {
@@ -601,9 +604,9 @@ dash.calc('pf_total', {
       const nhi = td(d.nhi ? TY.fmtInt(d.nhi) : '0', 'num' + (d.nhi ? ' ty-neg' : ''));
       tr.append(
         td(d.stock), td(d.name), td(TY.fmtInt(d.shares), 'num'), td(TY.fmtPx(d.close), 'num'), td(money(d.value), 'num'),
-        td(d.div_2025 ? d.div_2025.toFixed(2) : '0', 'num'), td(TY.pct(d.yield_2025), 'num'), ex25,
+        td(TY.div(d.div_2025), 'num'), td(TY.pct(d.yield_2025), 'num'), ex25,
         ex26done, pend,
-        td(d.est_2026.toFixed(2), 'num'), td(TY.pct(d.est_yield_2026), 'num'), td(money(d.income), 'num'),
+        td(TY.div(d.est_2026), 'num'), td(TY.pct(d.est_yield_2026), 'num'), td(money(d.income), 'num'),
         td(d.cost_yield == null ? '—' : TY.pct(d.cost_yield), 'num'), nhi, del,
       );
       return tr;
@@ -624,7 +627,9 @@ dash.calc('pf_total', {
       return span;
     };
     el.replaceChildren(
+      item('2025 每股現金股利', 'div_2025', TY.div(s.div_2025) + ' 元'),
       item('2025 殖利率', 'yield_2025', TY.pct(TY.num(s.yield_2025))),
+      item('2026 每股（含預估）', 'est_2026', TY.div(s.est_2026) + ' 元'),
       item('2026 預估殖利率', 'est_yield_2026', TY.pct(TY.num(s.est_yield_2026))),
       item('2026 除息', 'ex_2026', s.ex_2026 || '尚無'),
       item('待除息', 'pending_2026', s.pending_2026 ? '預估 ' + s.pending_2026 : '無'),
@@ -801,7 +806,7 @@ dash.calc('pf_total', {
     if (!L || !L.length) {
       const tr = document.createElement('tr');
       const c = td(!L ? (TY.status('ranking') === 'error' ? '排行資料載入失敗' : '載入中…') : '找不到符合的標的', 'ty-empty');
-      c.colSpan = 18;
+      c.colSpan = 20;
       tr.append(c);
       tb.replaceChildren(tr);
       return;
@@ -834,13 +839,16 @@ dash.calc('pf_total', {
       tr.append(
         td(d.rank, 'num'), td(d.id), td(d.name), kind, ind,
         td(TY.pct(TY.num(d.avg_yield)), 'num'), td(TY.pct(TY.num(d.min_yield)), 'num'), spark,
-        td(d.years_paid, 'num'), td(TY.fmtPx(TY.num(d.close)), 'num'), td(TY.pct(TY.num(d.ttm_yield)), 'num'),
-        td(isFinite(ret) ? (ret > 0 ? '+' : '') + ret.toFixed(1) + '%' : '—', 'num ' + (ret >= 0 ? 'ty-pos' : 'ty-neg')),
-        td(TY.fmtInt(TY.num(d.lots)), 'num'),
+        td(d.years_paid, 'num'), td(TY.fmtPx(TY.num(d.close)), 'num'),
+        td(TY.div(d.div_2025), 'num'),
         td(TY.pct(TY.num(d.yield_2025)), 'num'),
         td(d.ex_2025 || '—', 'ty-wrap'),
+        td(TY.div(d.est_2026), 'num'),
         TY.exCell(d.ex_2026, d.pending_2026, d.missed_2026),
         td(TY.pct(TY.num(d.est_yield_2026)), 'num'),
+        td(TY.pct(TY.num(d.ttm_yield)), 'num'),
+        td(isFinite(ret) ? (ret > 0 ? '+' : '') + ret.toFixed(1) + '%' : '—', 'num ' + (ret >= 0 ? 'ty-pos' : 'ty-neg')),
+        td(TY.fmtInt(TY.num(d.lots)), 'num'),
         note,
       );
       tr.addEventListener('click', () => TY.select(d.id));
