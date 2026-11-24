@@ -36,10 +36,14 @@ def fetch_stock_list() -> pd.DataFrame:
                      params={"dataset": "TaiwanStockInfo"}, headers=UA, timeout=60)
     r.raise_for_status()
     df = pd.DataFrame(r.json()["data"])
-    df = df[df["type"].isin(["twse", "tpex"])]
-    # 同一檔可能屬多個產業分類，合併成一列
-    df = (df.groupby(["stock_id", "stock_name", "type"], as_index=False)
-            .agg(industry=("industry_category", lambda s: "/".join(sorted(set(s))))))
+    df = df[df["type"].isin(["twse", "tpex"]) & (df["industry_category"] != "Index")].copy()
+    df["stock_name"] = df["stock_name"].str.rstrip("*")
+    # 同一檔可能屬多個產業分類、或曾轉換上市櫃別：產業合併，市場別取最新一筆
+    inds = df.groupby("stock_id")["industry_category"].agg(lambda s: "/".join(sorted(set(s))))
+    df = (df.sort_values("date").groupby("stock_id").tail(1)
+            [["stock_id", "stock_name", "type"]].set_index("stock_id"))
+    df["industry"] = inds
+    df = df.reset_index()
     df["yahoo"] = df["stock_id"] + df["type"].map({"twse": ".TW", "tpex": ".TWO"})
     return df.sort_values("stock_id").reset_index(drop=True)
 
@@ -108,6 +112,9 @@ def main():
 
     def job(row):
         res, status = fetch_one(row.stock_id, row.yahoo, args.range, session)
+        if status == "not_found":  # 市場別資料可能過時，改試另一個後綴
+            alt = row.yahoo.replace(".TWO", ".TW") if row.yahoo.endswith(".TWO") else row.yahoo + "O"
+            res, status = fetch_one(row.stock_id, alt, args.range, session)
         if res is None:
             return row.stock_id, status, None, [], []
         px, divs, splits = parse(row.stock_id, res)
@@ -129,7 +136,14 @@ def main():
             if i % 200 == 0:
                 print(f"  {i}/{len(futs)}", flush=True)
 
-    pd.DataFrame(all_divs).sort_values(["stock_id", "date"]).to_csv(DATA / "dividends.csv", index=False)
+    dv = pd.DataFrame(all_divs).sort_values(["stock_id", "date"])
+    # Yahoo 偶有同一筆股利重複出現在相鄰日期（如 00858 2024-07-25/26），去重
+    dv["date"] = pd.to_datetime(dv["date"])
+    prev = dv.groupby("stock_id")[["date", "cash_dividend"]].shift()
+    dup = ((dv["date"] - prev["date"]).dt.days.le(7)
+           & (dv["cash_dividend"] - prev["cash_dividend"]).abs().lt(1e-6))
+    print(f"移除重複股利事件 {int(dup.sum())} 筆")
+    dv[~dup].assign(date=lambda x: x["date"].dt.date).to_csv(DATA / "dividends.csv", index=False)
     pd.DataFrame(all_splits, columns=["stock_id", "date", "ratio", "split_ratio"]) \
         .sort_values(["stock_id", "date"]).to_csv(DATA / "splits.csv", index=False)
     lg = pd.DataFrame(log).sort_values("stock_id")

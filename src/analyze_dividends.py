@@ -57,7 +57,8 @@ def main():
             continue
         d = div_by.get(s.stock_id, divs.iloc[:0])
         rec = {"代號": s.stock_id, "名稱": s.stock_name,
-               "市場": "上市" if s.type == "twse" else "上櫃", "產業": s.industry,
+               "市場": "上市" if s.type == "twse" else "上櫃",
+               "類型": "ETF" if s.stock_id.startswith("00") else "個股", "產業": s.industry,
                "首筆資料日": px["date"].min().date(), "最後交易日": px["date"].max().date()}
         ylds, sums = [], []
         for k in range(5, 0, -1):  # 舊→新
@@ -112,7 +113,11 @@ def main():
     ]})
     pct = ycols + ["近五年平均殖利率", "近五年最低殖利率", "近一年殖利率(以最新價)", "近五年含息報酬率"]
     with pd.ExcelWriter(OUT / "top100_dividend_yield.xlsx", engine="openpyxl") as xw:
-        for name, frame in [("Top100", top), ("全部合格標的", elig), ("說明", note)]:
+        sheets = [("Top100", top),
+                  ("Top100 個股", elig[elig["類型"] == "個股"].head(args.top)),
+                  ("Top100 ETF", elig[elig["類型"] == "ETF"].head(args.top)),
+                  ("全部合格標的", elig), ("說明", note)]
+        for name, frame in sheets:
             frame.to_excel(xw, sheet_name=name, index=False)
             ws = xw.sheets[name]
             for j, col in enumerate(frame.columns, 1):
@@ -124,7 +129,7 @@ def main():
                         c.number_format = fmt
             ws.freeze_panes = "D2" if name != "說明" else None
     print(f"資料截止 {end.date()}；全部 {len(df)} 檔，合格 {len(elig)} 檔")
-    show = top[["排名", "代號", "名稱", "市場", "近五年平均殖利率", "近五年最低殖利率", "配息年數(近5年)", "最新收盤價", "近一年日均量(張)", "備註"]].copy()
+    show = top[["排名", "代號", "名稱", "市場", "類型", "近五年平均殖利率", "近五年最低殖利率", "配息年數(近5年)", "最新收盤價", "近一年日均量(張)", "備註"]].copy()
     for c in ["近五年平均殖利率", "近五年最低殖利率"]:
         show[c] = (show[c] * 100).round(2)
     print(show.to_string(index=False))
