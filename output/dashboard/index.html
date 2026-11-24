@@ -79,6 +79,9 @@
   .ty-tax p, .ty-tax li { margin: 0; font-size: var(--cds-font-size-body); line-height: 1.55; }
   .ty-tax ul { margin: 4px 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; }
   .ty-tax .ty-hint { margin-top: 6px; }
+  .ty-privacy-bar { display: flex; justify-content: flex-end; }
+  .ty.is-private .ty-money { filter: blur(7px); user-select: none; }
+  @media (prefers-reduced-motion: no-preference) { .ty-money { transition: filter var(--cds-dur-slow) var(--cds-ease-out); } }
   .ty-notes { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
   .ty-notes summary { cursor: pointer; color: var(--color-fg); }
   .ty-notes ul { margin: var(--cds-gap-sm) 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; max-width: 72ch; }
@@ -96,6 +99,9 @@
   </div>
 
   <section class="ty-panel" id="portfolio" role="tabpanel" aria-labelledby="tab-portfolio">
+    <div class="ty-privacy-bar">
+      <button type="button" class="ty-btn ghost" id="ty-privacy" aria-pressed="false" data-draw="privacy-label">—</button>
+    </div>
     <section class="ty-card" id="add-holding">
       <h2>新增或修改持股</h2>
       <form class="ty-form" id="ty-hold-form" autocomplete="off">
@@ -112,17 +118,17 @@
     <section class="ty-kpis" id="pf-kpis">
       <div class="ty-kpi" id="pf-kpi-income">
         <div class="ty-kpi-label">2026 入帳現金股利（元）</div>
-        <div class="ty-kpi-value" data-draw="pf-income" data-source="pf_total" data-field="income" data-row="0">—</div>
-        <div class="ty-kpi-note" data-draw="pf-income-note">—</div>
+        <div class="ty-kpi-value ty-money" data-draw="pf-income" data-source="pf_total" data-field="income" data-row="0">—</div>
+        <div class="ty-kpi-note ty-money" data-draw="pf-income-note">—</div>
       </div>
       <div class="ty-kpi" id="pf-kpi-stock">
         <div class="ty-kpi-label">2026 配股（股）</div>
-        <div class="ty-kpi-value" data-draw="pf-stock" data-source="pf_total" data-field="stock_shares" data-row="0">—</div>
-        <div class="ty-kpi-note" data-draw="pf-stock-note">—</div>
+        <div class="ty-kpi-value ty-money" data-draw="pf-stock" data-source="pf_total" data-field="stock_shares" data-row="0">—</div>
+        <div class="ty-kpi-note ty-money" data-draw="pf-stock-note">—</div>
       </div>
       <div class="ty-kpi" id="pf-kpi-value">
         <div class="ty-kpi-label">持股市值（元）</div>
-        <div class="ty-kpi-value" data-draw="pf-value" data-source="pf_total" data-field="value" data-row="0">—</div>
+        <div class="ty-kpi-value ty-money" data-draw="pf-value" data-source="pf_total" data-field="value" data-row="0">—</div>
         <div class="ty-kpi-note">以 2026-11-24 收盤價計算</div>
       </div>
       <div class="ty-kpi" id="pf-kpi-yield">
@@ -132,12 +138,12 @@
       </div>
       <div class="ty-kpi" id="pf-kpi-credit">
         <div class="ty-kpi-label">股利可抵減稅額（元）</div>
-        <div class="ty-kpi-value" data-draw="pf-credit" data-source="pf_total" data-field="credit" data-row="0">—</div>
+        <div class="ty-kpi-value ty-money" data-draw="pf-credit" data-source="pf_total" data-field="credit" data-row="0">—</div>
         <div class="ty-kpi-note">（現金 + 配股按面額 10 元）× 8.5%，每戶上限 80,000</div>
       </div>
       <div class="ty-kpi" id="pf-kpi-nhi">
         <div class="ty-kpi-label">二代健保補充保費（元）</div>
-        <div class="ty-kpi-value" data-draw="pf-nhi" data-source="pf_total" data-field="nhi" data-row="0">—</div>
+        <div class="ty-kpi-value ty-money" data-draw="pf-nhi" data-source="pf_total" data-field="nhi" data-row="0">—</div>
         <div class="ty-kpi-note">2026 入帳中，單筆 ≥ 20,000 元者扣 2.11%</div>
       </div>
     </section>
@@ -550,6 +556,19 @@ dash.calc('pf_total', {
   document.querySelectorAll('.ty-tab').forEach((b) => b.addEventListener('click', () => openTab(b.dataset.tab)));
   if (location.hash === '#ranking-tab') openTab('ranking-tab');
 
+  // ---------- privacy toggle ----------
+  function setPrivate(on, init) {
+    TY.st.private = on;
+    document.querySelectorAll('.ty').forEach((r) => r.classList.toggle('is-private', on));
+    document.querySelectorAll('#ty-privacy').forEach((b) => { b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? '顯示金額' : '隱藏金額'); });
+    try { localStorage.setItem('ty-private', on ? '1' : '0'); } catch (e) { /* 無法記住也沒關係 */ }
+    if (!init) dash.draw('privacy-label');
+  }
+  let startPrivate = false;
+  try { startPrivate = localStorage.getItem('ty-private') === '1'; } catch (e) { startPrivate = false; }
+  setPrivate(startPrivate, true);
+  document.querySelectorAll('#ty-privacy').forEach((b) => b.addEventListener('click', () => setPrivate(!TY.st.private)));
+
   // ---------- holdings form ----------
   const HOLD_PATH = (uid) => `data/users/${uid}/portfolio/holdings`;
   function setMsg(text, ok) { TY.st.msg = text; TY.st.msgOk = ok; }
@@ -615,6 +634,8 @@ dash.calc('pf_total', {
   dash.draw('kpi-etf', kpi('etf', (v) => String(v)));
 
 
+  dash.draw('privacy-label', (el) => { el.textContent = TY.st.private ? '顯示金額' : '隱藏金額'; });
+
   dash.draw('form-msg', (el) => {
     el.className = 'ty-formmsg' + (TY.st.msgOk ? ' ok' : '');
     el.textContent = TY.st.msg || '';
@@ -675,13 +696,13 @@ dash.calc('pf_total', {
       .attr('y', (d) => y(d.done + d.pending)).attr('height', (d) => y(d.done) - y(d.done + d.pending))
       .style('fill', dash.colors[0]).style('opacity', 0.35);
     const small = W < 520;
-    g.append('text').attr('class', 'ty-val').attr('x', (d) => x(d.month) + x.bandwidth() / 2).attr('y', (d) => y(d.done + d.pending) - 5)
+    g.append('text').attr('class', 'ty-val ty-money').attr('x', (d) => x(d.month) + x.bandwidth() / 2).attr('y', (d) => y(d.done + d.pending) - 5)
       .attr('text-anchor', 'middle').style('font-size', small ? '9px' : null)
       .text((d) => (d.done + d.pending ? (small && d.done + d.pending >= 10000 ? (Math.round((d.done + d.pending) / 1000) + 'k') : TY.fmtInt(d.done + d.pending)) : ''));
     svg.append('g').attr('class', 'ty-axis').selectAll('text').data(data).join('text')
       .attr('x', (d) => x(d.month) + x.bandwidth() / 2).attr('y', H - 6).attr('text-anchor', 'middle').text((d) => +d.month.slice(5) + '月');
     const tp = TY.tip(el);
-    g.on('mousemove', (ev, d) => tp.show(ev, [`2026 年 ${+d.month.slice(5)} 月`, `已入帳 ${TY.fmtInt(d.done)} 元`, `還沒入帳 ${TY.fmtInt(d.pending)} 元`])).on('mouseleave', () => tp.hide());
+    g.on('mousemove', (ev, d) => tp.show(ev, TY.st.private ? [`2026 年 ${+d.month.slice(5)} 月`, '金額已隱藏'] : [`2026 年 ${+d.month.slice(5)} 月`, `已入帳 ${TY.fmtInt(d.done)} 元`, `還沒入帳 ${TY.fmtInt(d.pending)} 元`])).on('mouseleave', () => tp.hide());
   });
 
   dash.draw('pf-cal-count', (el) => {
@@ -707,10 +728,10 @@ dash.calc('pf_total', {
       tr.append(
         td((d.pay_est ? '約 ' : '') + d.pay_date), td(d.stock), td(d.name), td(d.type), td(d.ex_date),
         td(d.type === '現金' ? TY.div(d.per_share) + ' 元' : '每千股 ' + (d.per_share * 1000).toFixed(1) + ' 股', 'num'),
-        td(TY.fmtInt(d.shares), 'num'),
-        td(d.type === '現金' ? TY.fmtInt(d.cash) : '—', 'num'),
-        td(d.type === '股票' ? TY.fmtInt(d.new_shares) : '—', 'num'),
-        td(d.nhi ? TY.fmtInt(d.nhi) : '0', 'num' + (d.nhi ? ' ty-neg' : '')),
+        td(TY.fmtInt(d.shares), 'num ty-money'),
+        td(d.type === '現金' ? TY.fmtInt(d.cash) : '—', 'num ty-money'),
+        td(d.type === '股票' ? TY.fmtInt(d.new_shares) : '—', 'num ty-money'),
+        td(d.nhi ? TY.fmtInt(d.nhi) : '0', 'num ty-money' + (d.nhi ? ' ty-neg' : '')),
         status,
       );
       if (!d.pay_date.startsWith('2026')) tr.style.opacity = '0.6';
@@ -744,15 +765,15 @@ dash.calc('pf_total', {
       });
       del.append(b);
       if (!d.found) {
-        tr.append(td(d.stock), td(d.name), td(TY.fmtInt(d.shares), 'num'));
+        tr.append(td(d.stock), td(d.name), td(TY.fmtInt(d.shares), 'num ty-money'));
         const c = td('這個代號沒有在上市櫃資料中，可能已下市或是興櫃股票。', 'ty-est'); c.colSpan = 9; tr.append(c, del);
         return tr;
       }
       tr.append(
-        td(d.stock), td(d.name), td(TY.fmtInt(d.shares), 'num'), td(TY.fmtPx(d.close), 'num'), td(money(d.value), 'num'),
+        td(d.stock), td(d.name), td(TY.fmtInt(d.shares), 'num ty-money'), td(TY.fmtPx(d.close), 'num'), td(money(d.value), 'num ty-money'),
         td(TY.div(d.div_2025), 'num'), td(TY.pct(d.yield_2025), 'num'),
-        td(TY.div(d.recv_2026), 'num'), td(money(d.income), 'num'), td(d.new_shares ? TY.fmtInt(d.new_shares) : '0', 'num'),
-        td(TY.pct(d.recv_yield_2026), 'num'), td(d.cost_yield == null ? '—' : TY.pct(d.cost_yield), 'num'), del,
+        td(TY.div(d.recv_2026), 'num'), td(money(d.income), 'num ty-money'), td(d.new_shares ? TY.fmtInt(d.new_shares) : '0', 'num ty-money'),
+        td(TY.pct(d.recv_yield_2026), 'num'), td(d.cost_yield == null ? '—' : TY.pct(d.cost_yield), 'num ty-money'), del,
       );
       return tr;
     }));
