@@ -200,7 +200,7 @@
         <h2>入帳行事曆</h2>
         <span class="ty-count" data-draw="pf-cal-count">—</span>
       </div>
-      <p class="ty-hint">「除息時股數」= 除息日前已持有的股數，加上定期定額在除息日前預計買到的股數。入帳日標「約」的是推估：用這檔過去除息到發放的平均天數，沒有紀錄時個股抓 30 天、ETF 抓 24 天；配股抓除權後 30 天。實際日期以公司公告為準。</p>
+      <p class="ty-hint">依入帳日由早到晚排列。「除息時股數」= 除息日前已持有的股數，加上定期定額在除息日前預計買到的股數。入帳日標「約」的是推估：用這檔過去除息到發放的平均天數，沒有紀錄時個股抓 30 天、ETF 抓 24 天；配股抓除權後 30 天。實際日期以公司公告為準。</p>
       <div class="ty-table-wrap">
         <table class="ty-table" data-source="pf_cal" data-row-key="key">
           <thead>
@@ -558,7 +558,7 @@ dash.calc('pf_cal', {
         per_share: amt, shares, cash, new_shares: newShares,
         nhi: base >= 20000 ? Math.round(base * 0.0211) : 0,
       };
-    }).filter((r) => r.shares > 0).sort((a, b) => (a.pay_date > b.pay_date ? -1 : a.pay_date < b.pay_date ? 1 : 0));
+    }).filter((r) => r.shares > 0).sort((a, b) => (a.pay_date < b.pay_date ? -1 : a.pay_date > b.pay_date ? 1 : 0));
   },
 });
 
