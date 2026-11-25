@@ -89,11 +89,20 @@ def build_forecast(stocks, end):
         paid26 = e26["cash_dividend"].sum()
         est26 = paid26 + sum(a for _, a in pend)
         close = px["close"].iloc[-1]
+        last_d = px["date"].iloc[-1]
+        prev = px["close"].iloc[-2] if len(px) >= 2 else close
+        ago = lambda days: px[px["date"] <= last_d - pd.Timedelta(days=days)]["close"]
+        m1, ytd0 = ago(30), px[px["date"] < f"{YEAR}-01-01"]["close"]
+        y1 = px[px["date"] > last_d - pd.Timedelta(days=365)]
+        pct = lambda base: round((close / base - 1) * 100, 2) if base else ""
         events = lambda e: "、".join(f"{fmt(t)} ${a:g}" for t, a in zip(e["date"], e["raw"].round(4)))
         rows.append({
             "id": s.stock_id, "name": s.stock_name, "market": {"twse": "上市", "tpex": "上櫃"}.get(s.type, "興櫃"),
             "kind": "ETF" if s.stock_id.startswith("00") else "個股",
-            "close": round(close, 2),
+            "close": round(close, 2), "price_date": last_d.strftime("%Y-%m-%d"),
+            "chg_1d": pct(prev), "chg_1m": pct(m1.iloc[-1] if len(m1) else None),
+            "chg_ytd": pct(ytd0.iloc[-1] if len(ytd0) else None),
+            "high_52w": round(y1["close"].max(), 2), "low_52w": round(y1["close"].min(), 2),
             "div_2025": round(e25["cash_dividend"].sum(), 4), "yield_2025": round(y25, 2),
             "times_2025": len(e25), "ex_2025": events(e25),
             "rights_2025": rights(st, YEAR - 1),

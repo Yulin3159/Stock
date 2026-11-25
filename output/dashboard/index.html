@@ -85,16 +85,39 @@
   .ty-notes { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
   .ty-notes summary { cursor: pointer; color: var(--color-fg); }
   .ty-notes ul { margin: var(--cds-gap-sm) 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; max-width: 72ch; }
+  .ty-up { color: var(--color-bad); }
+  .ty-down { color: var(--color-ok); }
+  .ty-news { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .ty-news li { display: grid; grid-template-columns: 2em 1fr; gap: 4px 10px; padding: 10px 0; border-bottom: 1px solid var(--color-border-line); }
+  .ty-news li:last-child { border-bottom: 0; }
+  .ty-news .rk { font-family: var(--font-anthropic-serif); font-size: var(--cds-font-size-heading); color: var(--color-fg-muted); font-variant-numeric: tabular-nums; }
+  .ty-news .hd { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .ty-news a { color: var(--color-fg); font-weight: var(--cds-font-weight-medium); text-decoration: underline; text-decoration-color: var(--color-border-line); text-underline-offset: 3px; }
+  .ty-news a:hover { text-decoration-color: currentColor; }
+  .ty-news .why { margin: 2px 0 0; font-size: var(--cds-font-size-body); line-height: 1.55; }
+  .ty-news .src { font-size: var(--cds-font-size-caption); color: var(--color-fg-muted); }
+  .ty-chip.good { color: var(--color-bad); border-color: currentColor; }
+  .ty-chip.bad { color: var(--color-ok); border-color: currentColor; }
+  .ty-brief { margin: 0; font-size: var(--cds-font-size-body); line-height: 1.65; max-width: 72ch; white-space: pre-line; }
+  .ty-points { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 4px; max-width: 72ch; line-height: 1.55; }
+  .ty-wbar { display: grid; grid-template-columns: minmax(6em, 9em) 1fr 4.5em; gap: 8px; align-items: center; font-size: var(--cds-font-size-body); padding: 3px 0; }
+  .ty-wbar .bar { height: 12px; background: var(--color-bg); border-radius: 3px; overflow: hidden; }
+  .ty-wbar .bar i { display: block; height: 100%; background: var(--color-fg); opacity: .75; }
+  .ty-wbar .bar i.etf { opacity: .35; }
+  .ty-wbar .v { text-align: right; font-variant-numeric: tabular-nums; }
+  .ty-range { display: inline-block; width: 70px; height: 6px; background: var(--color-bg); border-radius: 3px; position: relative; vertical-align: middle; margin-right: 6px; }
+  .ty-range i { position: absolute; top: -3px; width: 3px; height: 12px; background: var(--color-fg); border-radius: 1px; }
 </style>
 
 <div class="ty">
   <header class="ty-head" id="overview">
     <h1 class="ty-title">台股配息規劃</h1>
-    <p class="ty-sub">資料截止 2026-11-24。股價與股利取自 Yahoo Finance。</p>
+    <p class="ty-sub">資料截止 <span data-draw="asof" data-source="forecast">—</span>。股價取自證交所、櫃買中心與 Yahoo Finance，配息取自 Yahoo Finance 與 FinMind；每天早上 8 點、下午 2 點自動更新。</p>
   </header>
 
   <div class="ty-tabs" role="tablist" aria-label="頁面">
     <button type="button" class="ty-tab" role="tab" id="tab-portfolio" data-tab="portfolio" aria-selected="true">我的持股</button>
+    <button type="button" class="ty-tab" role="tab" id="tab-analysis" data-tab="analysis" aria-selected="false">持股分析</button>
     <button type="button" class="ty-tab" role="tab" id="tab-ranking" data-tab="ranking-tab" aria-selected="false">高殖利率排行</button>
   </div>
 
@@ -125,7 +148,7 @@
         <button type="submit" class="ty-btn" id="ty-dca-save">儲存</button>
         <span class="ty-formmsg" id="ty-dca-msg" role="status" data-draw="dca-msg"></span>
       </form>
-      <p class="ty-hint">每次買到的股數 = 扣款金額 ÷（股價 × 1.001425 手續費）取整數，買剩的錢退回帳戶。股價先假設維持在最新收盤價。只算 2026-11-25 之後的扣款，之前買到的請直接記在持股裡。</p>
+      <p class="ty-hint">每次買到的股數 = 扣款金額 ÷（股價 × 1.001425 手續費）取整數，買剩的錢退回帳戶。股價先假設維持在最新收盤價。只算明天起的扣款，之前買到的請直接記在持股裡。</p>
       <div class="ty-table-wrap">
         <table class="ty-table" data-source="dca_rows" data-row-key="stock">
           <thead>
@@ -170,7 +193,7 @@
       <div class="ty-kpi" id="pf-kpi-value">
         <div class="ty-kpi-label">持股市值（元）</div>
         <div class="ty-kpi-value ty-money" data-draw="pf-value" data-source="pf_total" data-field="value" data-row="0">—</div>
-        <div class="ty-kpi-note">以 2026-11-24 收盤價計算</div>
+        <div class="ty-kpi-note">以 <span data-draw="asof2" data-source="forecast">—</span> 收盤價計算</div>
       </div>
       <div class="ty-kpi" id="pf-kpi-yield">
         <div class="ty-kpi-label"><span data-draw="yr">—</span> 入帳殖利率</div>
@@ -285,9 +308,88 @@
     </section>
   </section>
 
+  <section class="ty-panel" id="analysis" role="tabpanel" aria-labelledby="tab-analysis" hidden>
+    <section class="ty-card" id="an-brief">
+      <div class="ty-table-head">
+        <h2>今日重點</h2>
+        <span class="ty-count" data-draw="an-updated" data-source="brief">—</span>
+      </div>
+      <p class="ty-meta" data-draw="an-index" data-source="brief">—</p>
+      <p class="ty-brief" data-draw="an-summary" data-source="brief">—</p>
+      <ul class="ty-points" data-draw="an-points" data-source="brief"></ul>
+      <p class="ty-hint">由 Claude 依當天的持股、股價、新聞與公司重大訊息整理，每天早上 8 點、下午 2 點更新。僅供參考，不構成投資建議。</p>
+    </section>
+
+    <section class="ty-card" id="an-news">
+      <div class="ty-table-head">
+        <h2>持股相關新聞 Top 10</h2>
+        <span class="ty-count" data-draw="an-news-count" data-source="news">—</span>
+      </div>
+      <p class="ty-hint">從持股近 3 天的新聞與公司重大訊息中，挑出對你的部位影響最大的 10 則。排序考量：持股占比、消息對股價或配息的影響、時效。「偏多 / 偏空」是對該檔股價的初步判讀。</p>
+      <ol class="ty-news" data-draw="an-news-list" data-source="news"></ol>
+    </section>
+
+    <section class="ty-kpis" id="an-kpis">
+      <div class="ty-kpi">
+        <div class="ty-kpi-label">今日持股市值變化（元）</div>
+        <div class="ty-kpi-value ty-money" data-draw="an-day" data-source="an_total" data-field="day_change" data-row="0">—</div>
+        <div class="ty-kpi-note" data-draw="an-day-note">—</div>
+      </div>
+      <div class="ty-kpi">
+        <div class="ty-kpi-label">最大持股占比</div>
+        <div class="ty-kpi-value" data-draw="an-top" data-source="an_total" data-field="top_weight" data-row="0">—</div>
+        <div class="ty-kpi-note" data-draw="an-top-note">—</div>
+      </div>
+      <div class="ty-kpi">
+        <div class="ty-kpi-label">台積電實際曝險</div>
+        <div class="ty-kpi-value" data-draw="an-tsmc" data-source="an_total" data-field="tsmc_weight" data-row="0">—</div>
+        <div class="ty-kpi-note">直接持股 + 0050 / 006208 內含的台積電（以約 6 成權重估算）</div>
+      </div>
+      <div class="ty-kpi">
+        <div class="ty-kpi-label">ETF : 個股</div>
+        <div class="ty-kpi-value" data-draw="an-mix" data-source="an_total" data-field="etf_weight" data-row="0">—</div>
+        <div class="ty-kpi-note">以市值計算</div>
+      </div>
+    </section>
+
+    <section class="ty-card" id="an-weights">
+      <h2>持股配置</h2>
+      <p class="ty-hint">各檔市值占總市值的比例。深色是個股，淺色是 ETF。</p>
+      <div data-draw="an-weight-bars" data-source="an_rows"></div>
+    </section>
+
+    <section class="ty-card" id="an-check">
+      <div class="ty-table-head">
+        <h2>個股體檢</h2>
+        <span class="ty-count" data-draw="an-count">—</span>
+      </div>
+      <p class="ty-hint">漲跌以收盤價計算（紅漲綠跌）。52 週位置：最左是一年內最低價、最右是最高價。殖利率比較：今年入帳殖利率與近 5 年平均相比，高於平均表示以現價買進的配息報酬比過去好。</p>
+      <div class="ty-table-wrap">
+        <table class="ty-table" data-source="an_rows" data-row-key="stock">
+          <thead>
+            <tr>
+              <th data-field="stock">代號</th>
+              <th data-field="name">名稱</th>
+              <th data-field="weight" class="num">占比</th>
+              <th data-field="close" class="num">收盤價</th>
+              <th data-field="chg_1d" class="num">今日</th>
+              <th data-field="chg_1m" class="num">近 1 月</th>
+              <th data-field="chg_ytd" class="num">今年以來</th>
+              <th data-field="pos_52w">52 週位置</th>
+              <th data-field="recv_yield" class="num">2026 入帳殖利率</th>
+              <th data-field="avg_yield" class="num">近 5 年平均殖利率</th>
+              <th data-field="notes">提醒</th>
+            </tr>
+          </thead>
+          <tbody data-draw="an-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </section>
+
   <section class="ty-panel" id="ranking-tab" role="tabpanel" aria-labelledby="tab-ranking" hidden>
     <p class="ty-lede" data-read lang="zh-TW">近五年平均現金殖利率最高的是 <b class="dash-skeleton" data-draw="top-name" data-source="ranking" data-field="name" data-row="0">—</b>，平均每年 <b class="dash-skeleton" data-draw="top-yield" data-source="ranking" data-field="avg_yield" data-row="0">—</b>；綜合前 100 名的平均為 <b class="dash-skeleton" data-draw="kpi-avg" data-source="kpi" data-field="top_avg" data-row="0">—</b>。</p>
-    <p class="ty-sub">近五年指 2021-11-24 至 2026-11-24 的 5 個 12 個月區間；殖利率 = 區間內現金股利 ÷ 區間平均股價。</p>
+    <p class="ty-sub">近五年指到最新交易日為止的 5 個 12 個月區間；殖利率 = 區間內現金股利 ÷ 區間平均股價。</p>
 
   <section class="ty-kpis" id="kpis">
     <div class="ty-kpi" id="kpi-eligible">
@@ -493,7 +595,7 @@ dash.calc('kpi', {
   },
 });
 
-window.TY_TODAY = '2026-11-24';
+window.TY_TODAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei' }).format(new Date());
 window.TYbuy = (amount, close) => (close > 0 ? Math.floor(amount / (close * 1.001425)) : 0);
 // 定期定額在 (TODAY, before) 之間的每次扣款日
 window.TYdcaDates = (day, before) => {
@@ -509,7 +611,7 @@ window.TYdcaDates = (day, before) => {
 dash.calc('dca_rows', {
   inputs: ['dca', 'forecast'],
   title: '定期定額預估',
-  description: '每次買到股數 = 每月金額 ÷（最新收盤價 × 1.001425）取整數；退回 = 每月金額 − 股數 × 價格 × 1.001425。只算 2026-11-25 之後的扣款。',
+  description: '每次買到股數 = 每月金額 ÷（最新收盤價 × 1.001425）取整數；退回 = 每月金額 − 股數 × 價格 × 1.001425。只算明天起的扣款。',
   fn: (dca, forecast) => {
     const byId = new Map(forecast.map((f) => [f.id, f]));
     return dca.map((p) => {
@@ -632,6 +734,69 @@ dash.calc('pf_total', {
     }];
   },
 });
+
+dash.calc('an_rows', {
+  inputs: ['holdings', 'forecast', 'ranking'],
+  title: '個股體檢',
+  description: '只算目前持有的股數（不含定期定額未來買進）。占比 = 市值 ÷ 總市值；今日 / 近 1 月 / 今年以來為收盤價漲跌幅；52 週位置 =（收盤 − 一年最低）÷（一年最高 − 一年最低）；2026 入帳殖利率 = 2026 年入帳每股現金 ÷ 收盤價；近 5 年平均殖利率取自排行。提醒：占比超過 3 成、位置在一年區間最低或最高 1 成、殖利率與 5 年平均差 1 個百分點以上、30 天內除息、去年有配今年未配。',
+  fn: (holdings, forecast, ranking) => {
+    const fc = new Map(forecast.map((f) => [f.id, f]));
+    const rk = new Map(ranking.map((r) => [r.id, r]));
+    const today = window.TY_TODAY;
+    const in30 = new Date(Date.parse(today) + 30 * 864e5).toISOString().slice(0, 10);
+    const n = (v) => (v === '' || v == null || !isFinite(+v) ? null : +v);
+    const rows = holdings.map((h) => {
+      const code = String(h.stock || h.id), f = fc.get(code), r = rk.get(code);
+      const lots = window.TYlots(h);
+      const shares = lots ? lots.reduce((s, x) => s + x.shares, 0) : (+h.shares || 0);
+      if (!f || !shares) return null;
+      const close = +f.close, hi = n(f.high_52w), lo = n(f.low_52w);
+      return {
+        stock: code, name: f.name, kind: f.kind, shares, close, value: Math.round(shares * close),
+        chg_1d: n(f.chg_1d), chg_1m: n(f.chg_1m), chg_ytd: n(f.chg_ytd), high_52w: hi, low_52w: lo,
+        pos_52w: hi != null && lo != null && hi > lo ? Math.round((close - lo) / (hi - lo) * 100) : null,
+        recv_yield: n(f.recv_yield_2026), avg_yield: r ? n(r.avg_yield) : null,
+        next_ex: f.next_ex || '', next_amt: n(f.next_amt), missed: f.missed_2026 || '',
+      };
+    }).filter(Boolean);
+    const total = rows.reduce((s, r) => s + r.value, 0) || 1;
+    rows.forEach((r) => {
+      r.weight = Math.round(r.value / total * 1000) / 10;
+      const notes = [];
+      if (r.weight > 30) notes.push('占比超過 3 成，集中度高');
+      if (r.pos_52w != null && r.pos_52w <= 10) notes.push('接近一年低點');
+      if (r.pos_52w != null && r.pos_52w >= 90) notes.push('接近一年高點');
+      if (r.recv_yield != null && r.avg_yield != null) {
+        if (r.recv_yield >= r.avg_yield + 1) notes.push('殖利率高於 5 年平均');
+        else if (r.recv_yield <= r.avg_yield - 1) notes.push('殖利率低於 5 年平均');
+      }
+      if (r.next_ex && r.next_ex > today && r.next_ex <= in30) notes.push(`${r.next_ex.slice(5).replace('-', '/')} 預計除息`);
+      if (r.missed) notes.push('去年同期有配，今年尚未配');
+      r.notes = notes.join('；');
+    });
+    return rows.sort((a, b) => b.value - a.value);
+  },
+});
+
+dash.calc('an_total', {
+  inputs: ['an_rows'],
+  title: '持股配置合計',
+  description: '今日變化 = Σ 股數 × 收盤價 × 今日漲跌幅 ÷（1 + 今日漲跌幅）；台積電曝險 =（台積電市值 + 0050 與 006208 市值 × 0.6）÷ 總市值，0.6 為兩檔 ETF 中台積電權重的約略值。',
+  fn: (rows) => {
+    const total = rows.reduce((s, r) => s + r.value, 0);
+    const day = rows.reduce((s, r) => s + (r.chg_1d == null ? 0 : r.value - r.value / (1 + r.chg_1d / 100)), 0);
+    const top = rows[0] || null;
+    const val = (id) => (rows.find((r) => r.stock === id) || { value: 0 }).value;
+    const etf = rows.filter((r) => r.kind === 'ETF').reduce((s, r) => s + r.value, 0);
+    const pct = (v) => (total ? Math.round(v / total * 1000) / 10 : 0);
+    return [{
+      total, day_change: Math.round(day), day_pct: total - day ? Math.round(day / (total - day) * 10000) / 100 : 0,
+      top_weight: top ? top.weight : 0, top_name: top ? top.name : '',
+      tsmc_weight: pct(val('2330') + (val('0050') + val('006208')) * 0.6),
+      etf_weight: pct(etf), count: rows.length,
+    }];
+  },
+});
 </script>
 
 <script>
@@ -657,6 +822,7 @@ dash.calc('pf_total', {
   }
   document.querySelectorAll('.ty-tab').forEach((b) => b.addEventListener('click', () => openTab(b.dataset.tab)));
   if (location.hash === '#ranking-tab') openTab('ranking-tab');
+  if (location.hash === '#analysis') openTab('analysis');
 
   // ---------- privacy toggle ----------
   function setPrivate(on, init) {
@@ -1200,6 +1366,118 @@ dash.calc('pf_total', {
       );
       tr.addEventListener('click', () => TY.select(d.id));
       tr.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') TY.select(d.id); });
+      return tr;
+    }));
+  });
+
+  // ---------- 持股分析 ----------
+  const asof = (el) => {
+    const r = dash.data('forecast');
+    if (r.status !== 'ok' || !r.data.length) { el.textContent = '—'; return; }
+    let m = '';
+    for (const f of r.data) if (f.price_date && f.price_date > m) m = f.price_date;
+    el.textContent = m || '—';
+  };
+  dash.draw('asof', asof);
+  dash.draw('asof2', asof);
+  const brief = () => { const r = dash.data('brief'); return r.status === 'ok' && Array.isArray(r.data) && r.data.length ? r.data[0] : null; };
+  const briefState = () => { const r = dash.data('brief'); return r.status === 'ok' ? '還沒有報告，下一次自動更新時會產生。' : r.status === 'error' ? '報告載入失敗' : r.status === 'connect' || r.status === 'declined' ? '需要登入才能讀取你的報告' : '載入中…'; };
+  dash.draw('an-updated', (el) => { const b = brief(); el.textContent = b && b.updated_at ? `更新於 ${b.updated_at}` : '—'; });
+  dash.draw('an-index', (el) => {
+    const b = brief();
+    el.replaceChildren();
+    if (!b || b.index_close == null || b.index_close === '') { el.textContent = '—'; return; }
+    const c = +b.index_change_pct, cls = c > 0 ? 'ty-up' : c < 0 ? 'ty-down' : '';
+    const item = (label, text, k) => { const s1 = document.createElement('span'); s1.append(label + ' '); const v = document.createElement('b'); v.textContent = text; if (k) v.className = k; s1.append(v); return s1; };
+    el.append(item(`加權指數（${String(b.index_date || '').slice(5).replace('-', '/')}）`, TY.fmtPx(+b.index_close)),
+      item('漲跌', `${c > 0 ? '+' : ''}${TY.fmtPx(+b.index_change)}（${c > 0 ? '+' : ''}${c.toFixed(2)}%）`, cls));
+    if (b.index_month_pct !== '' && b.index_month_pct != null) { const mm = +b.index_month_pct; el.append(item('近 1 月', `${mm > 0 ? '+' : ''}${mm.toFixed(2)}%`, mm > 0 ? 'ty-up' : mm < 0 ? 'ty-down' : '')); }
+  });
+  dash.draw('an-summary', (el) => { const b = brief(); el.textContent = b ? (b.summary || '') : briefState(); });
+  dash.draw('an-points', (ul) => {
+    const b = brief();
+    const pts = b ? (Array.isArray(b.points) ? b.points : String(b.points || '').split('\n')).filter((x) => String(x).trim()) : [];
+    ul.replaceChildren(...pts.map((t) => { const li = document.createElement('li'); li.textContent = t; return li; }));
+  });
+  dash.draw('an-news-count', (el) => { const r = dash.data('news'); el.textContent = r.status === 'ok' && Array.isArray(r.data) ? `${r.data.length} 則` : '—'; });
+  dash.draw('an-news-list', (ol) => {
+    const r = dash.data('news');
+    const msg = (t) => { const li = document.createElement('li'); li.className = 'ty-empty'; li.style.display = 'block'; li.textContent = t; ol.replaceChildren(li); };
+    if (r.status === 'error') return msg('新聞載入失敗');
+    if (r.status !== 'ok' || !Array.isArray(r.data)) return msg(r.status === 'connect' || r.status === 'declined' ? '需要登入才能讀取你的報告' : '載入中…');
+    if (!r.data.length) return msg('還沒有新聞，下一次自動更新時會產生。');
+    const impactCls = { 偏多: 'good', 偏空: 'bad', 注意: 'warn' };
+    ol.replaceChildren(...r.data.slice().sort((a, b) => (+a.rank || 99) - (+b.rank || 99)).map((d) => {
+      const li = document.createElement('li');
+      const rk = document.createElement('span'); rk.className = 'rk'; rk.textContent = d.rank || '';
+      const body = document.createElement('div');
+      const hd = document.createElement('div'); hd.className = 'hd';
+      const chip = (t, c) => { const s1 = document.createElement('span'); s1.className = 'ty-chip' + (c ? ' ' + c : ''); s1.textContent = t; return s1; };
+      if (d.stock) hd.append(chip(`${d.stock} ${d.name || ''}`.trim()));
+      if (d.impact) hd.append(chip(d.impact, impactCls[d.impact]));
+      let title;
+      if (d.link && /^https?:\/\//.test(d.link)) { title = document.createElement('a'); title.href = d.link; title.target = '_blank'; title.rel = 'noopener noreferrer'; } else { title = document.createElement('span'); title.style.fontWeight = 'var(--cds-font-weight-medium)'; }
+      title.textContent = d.title || '';
+      const why = document.createElement('p'); why.className = 'why'; why.textContent = d.why || '';
+      const src = document.createElement('div'); src.className = 'src'; src.textContent = [d.source, d.date].filter(Boolean).join(' · ');
+      body.append(hd, title, why, src);
+      li.append(rk, body);
+      return li;
+    }));
+  });
+  const anT = (field, fmt) => (el) => { const r = dash.data('an_total'); el.textContent = r.status === 'ok' && r.data.length && r.data[0].count ? fmt(r.data[0][field], r.data[0]) : '—'; };
+  dash.draw('an-day', (el) => {
+    const r = dash.data('an_total');
+    el.classList.remove('ty-up', 'ty-down');
+    if (r.status !== 'ok' || !r.data.length || !r.data[0].count) { el.textContent = '—'; return; }
+    const v = r.data[0].day_change;
+    el.textContent = (v > 0 ? '+' : '') + TY.fmtInt(v);
+    if (v) el.classList.add(v > 0 ? 'ty-up' : 'ty-down');
+  });
+  dash.draw('an-day-note', anT('day_pct', (v) => `持股整體 ${v > 0 ? '+' : ''}${v.toFixed(2)}%`));
+  dash.draw('an-top', anT('top_weight', (v) => `${v.toFixed(1)}%`));
+  dash.draw('an-top-note', anT('top_name', (v) => v));
+  dash.draw('an-tsmc', anT('tsmc_weight', (v) => `約 ${v.toFixed(0)}%`));
+  dash.draw('an-mix', anT('etf_weight', (v) => `${v.toFixed(0)} : ${(100 - v).toFixed(0)}`));
+  dash.draw('an-count', (el) => { const r = dash.data('an_rows'); el.textContent = r.status === 'ok' ? `${r.data.length} 檔` : '—'; });
+  dash.draw('an-weight-bars', (el) => {
+    const r = dash.data('an_rows');
+    if (r.status !== 'ok') { el.textContent = r.status === 'error' ? '資料載入失敗' : '載入中…'; return; }
+    if (!r.data.length) { el.textContent = '還沒有持股。'; return; }
+    const max = Math.max(...r.data.map((d) => d.weight), 1);
+    el.replaceChildren(...r.data.map((d) => {
+      const row = document.createElement('div'); row.className = 'ty-wbar';
+      const name = document.createElement('span'); name.textContent = `${d.stock} ${d.name}`;
+      const bar = document.createElement('span'); bar.className = 'bar';
+      const i = document.createElement('i'); i.style.width = `${d.weight / max * 100}%`; if (d.kind === 'ETF') i.className = 'etf';
+      bar.append(i);
+      const v = document.createElement('span'); v.className = 'v'; v.textContent = `${d.weight.toFixed(1)}%`;
+      row.append(name, bar, v);
+      return row;
+    }));
+  });
+  dash.draw('an-body', (tb) => {
+    const r = dash.data('an_rows');
+    const td = (text, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = text; return c; };
+    const empty = (text) => { const tr = document.createElement('tr'); const c = td(text, 'ty-empty'); c.colSpan = 11; tr.append(c); tb.replaceChildren(tr); };
+    if (r.status === 'error') return empty('資料載入失敗');
+    if (r.status !== 'ok') return empty(r.status === 'connect' || r.status === 'declined' ? '需要登入才能讀取你的持股' : '載入中…');
+    if (!r.data.length) return empty('還沒有持股。到「我的持股」新增後，這裡會列出每一檔的體檢結果。');
+    const chg = (v) => td(v == null ? '—' : `${v > 0 ? '+' : ''}${v.toFixed(2)}%`, 'num' + (v > 0 ? ' ty-up' : v < 0 ? ' ty-down' : ''));
+    tb.replaceChildren(...r.data.map((d) => {
+      const tr = document.createElement('tr');
+      tr.dataset.key = encodeURIComponent(d.stock);
+      const pos = td('');
+      if (d.pos_52w != null) {
+        const rg = document.createElement('span'); rg.className = 'ty-range';
+        const i = document.createElement('i'); i.style.left = `calc(${d.pos_52w}% - 1px)`; rg.append(i);
+        pos.append(rg, `${TY.fmtPx(d.low_52w)} – ${TY.fmtPx(d.high_52w)}`);
+        pos.title = `一年區間的 ${d.pos_52w}% 位置`;
+      } else pos.textContent = '—';
+      tr.append(td(d.stock), td(d.name), td(`${d.weight.toFixed(1)}%`, 'num'), td(TY.fmtPx(d.close), 'num'),
+        chg(d.chg_1d), chg(d.chg_1m), chg(d.chg_ytd), pos,
+        td(d.recv_yield == null ? '—' : TY.pct(d.recv_yield), 'num'), td(d.avg_yield == null ? '—' : TY.pct(d.avg_yield), 'num'),
+        td(d.notes || '—', 'ty-wrap'));
       return tr;
     }));
   });
